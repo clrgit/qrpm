@@ -15,33 +15,27 @@ module Qrpm
     attr_reader :fields
     attr_reader :nodes
 
+    # The content of the SPEC file
+    attr_reader :spec
+
     def files() @files ||= nodes.select(&:file?) end
     def links() @lines ||= nodes.select(&:link?) end
-
-    def spec_file() end
 
     def initialize(fields, nodes, template: TEMPLATE)
       @fields, @nodes = fields, nodes
       @template = template
     end
 
-    def build
-      tarfile = "#{name}.tar.gz"
-
+    def build(subject: all)
       Dir.mktmpdir { |rootdir|
-        rootdir = "tmp" # FIXME
-        FileUtils.rm_rf rootdir # FIXME
-        FileUtils.mkdir rootdir # FIXME
-
         specfile = "#{rootdir}/SPECS/#{name}.spec"
         tarfile = "#{rootdir}/SOURCES/#{name}.tar.gz"
-        tmpdir = "#{rootdir}/tmp"
 
         # Create directories
         RPM_DIRS.each { |dir| FileUtils.mkdir "#{rootdir}/#{dir}" }
 
         # Directory for tarball creation
-        tarroot = "#{tmpdir}/#{name}"
+        tarroot = "#{rootdir}/tmp/#{name}"
         FileUtils.mkdir(tarroot)
 
         # Copy files
@@ -49,18 +43,24 @@ module Qrpm
         system "tar cf - #{tar_files} | tar xf - -C #{tarroot}"
 
         # Roll tarball
-        system "tar zcf #{tarfile} -C #{tmpdir} #{name}" or raise "Can't roll tarball"
+        system "tar zcf #{tarfile} -C #{rootdir}/tmp #{name}" or raise "Can't roll tarball"
 
         # Remove temporary tar dir
         FileUtils.rm_rf tarroot
 
         # Create spec file
         renderer = ERB.new(IO.read(@template).sub(/^__END__\n.*/m, ""), trim_mode: "-")
-        puts renderer.result(binding)
+        @spec = renderer.result(binding)
 
-        IO.write(specfile, renderer.result(binding))
+        return if subject == :spec
 
-        system "rpmbuild -v -bb --define \"_topdir #{Dir.getwd}/tmp\" tmp/SPECS/#{name}.spec"
+        IO.write(specfile, @spec)
+
+        system "rpmbuild -v -bb --define \"_topdir #{rootdir}\" #{rootdir}/SPECS/#{name}.spec" or
+            raise "Failed building RPM file"
+
+        system "cp #{rootdir}/RPMS/*/#{name}-[0-9]* ." or
+            raise "Failed copying .RPM file"
       }
     end
 

@@ -27,9 +27,7 @@ begin
   Dir.chdir(opts.directory) if opts.directory?
 
   file = args.extract(-1)
-# file = "packager.yml"
   dict = {} # Map from variable name to value
-  dirs = {} # Map from directory name or symbolic name to array of files
 
   # Check if repository is clean
   opts.force? || `git status --porcelain 2>/dev/null` == "" or raise "Repository is dirty"
@@ -45,18 +43,9 @@ begin
   # Parse QRPM file
   rpm = Qrpm::Parser.parse(dict, yaml)
 
-  rpm.dump
+# rpm.dump
 
-  rpm.build
-
-# puts "dict"
-# indent { dict.each { |k,v| puts "#{k}: #{v.inspect}" } }
-# puts
-# puts "dirs"
-# indent { dirs.each { |k,v| puts "#{k}: #{v.inspect}" } }
-# puts
-# puts "nodes"
-# indent { files.map(&:dump) }
+  rpm.build(subject: :spec)
 
 rescue RuntimeError => ex
   ShellOpts.error ex.message

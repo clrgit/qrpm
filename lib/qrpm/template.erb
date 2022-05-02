@@ -8,6 +8,9 @@ Packager: <%= packager %>
 <% if group -%>
 Group: <%= group %>
 <% end -%>
+<% for pck in requires || [] -%>
+Requires: <%= pck %>
+<% end -%>
 Source: %{name}.tar.gz
 BuildRoot: <%= rootdir %>/tmp/%{name}-%{version}
 
