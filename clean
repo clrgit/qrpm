@@ -1,0 +1,3 @@
+#!/usr/bin/bash
+
+rm -rf example/{my_package_name,tmp,my_package_name.tar.gz}

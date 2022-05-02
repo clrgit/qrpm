@@ -21,6 +21,16 @@ BuildRoot: <%= rootdir %>/tmp/%{name}-%{version}
 %setup -n <%= name %>
 
 %build
+<% if make.nil? -%>
+<% if has_configure? -%>
+./configure
+<% end -%>
+<% if has_make? -%>
+make
+<% end -%>
+<% elsif make -%>
+<%= make %>
+<% end -%>
 
 %install
 mkdir -p <%= nodes.map { |f| "%{buildroot}#{f.directory}" }.uniq.join(" ") %>
@@ -49,7 +59,7 @@ touch %{buildroot}<%= link.path %>
 <% for file in files.select(&:perm) -%>
 chmod <%= file.perm %> <%= file.path %>
 <% end -%>
-<% for file in links %>
+<% for file in links -%>
 ln -sf <%= link.link %> <%= link.path %>
 <% end -%>
 

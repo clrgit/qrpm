@@ -10,6 +10,10 @@ requires:
   - httpd
   - postgresql13
 
+make: # List of files
+  - my_configure --prefix=gryf
+  - my_make
+
 bindir:
   - bin/a_file
   - bin/another_file

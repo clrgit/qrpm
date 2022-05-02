@@ -7,6 +7,10 @@ require 'yaml'
 require 'shellopts'
 require 'indented_io'
 
+# TODO
+#   o Make option
+#   o Fix BuildRoot (contains absolute path)
+
 begin
   SPEC = %(
     @ Quick RPM builder

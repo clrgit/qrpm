@@ -3,7 +3,7 @@ require 'fileutils'
 
 module Qrpm
   class Rpm
-    FIELDS = %w(name version release group license summary description packager requires)
+    FIELDS = %w(name version release group license summary description packager requires make)
     MANDATORY_FIELDS = %w(name summary version)
     TEMPLATE = "#{::File.dirname(__FILE__)}/template.erb"
 
@@ -20,6 +20,9 @@ module Qrpm
 
     def files() @files ||= nodes.select(&:file?) end
     def links() @lines ||= nodes.select(&:link?) end
+
+    def has_configure?() ::File.exist? "configure" end
+    def has_make?() ::File.exist? "make" end
 
     def initialize(fields, nodes, template: TEMPLATE)
       @fields, @nodes = fields, nodes
