@@ -1,5 +1,59 @@
 #!/usr/bin/env ruby
 
-require 'qrpm.rb'
+require_relative '../lib/qrpm/qrpm.rb'
+require_relative '../lib/qrpm.rb'
 
-puts Qrpm::VERSION
+require 'yaml'
+require 'shellopts'
+require 'indented_io'
+
+begin
+  SPEC = %(
+    @ Quick RPM builder
+
+    'qrpm' creates a RPM package from a simple YAML specification file
+
+    -- VARIABLE=VALUE... QRPM-FILE
+
+    -f,force
+      Create package even if repository is dirty
+  )
+
+  opts, args = ShellOpts.process(SPEC, ARGV)
+
+  #file = args.extract(-1)
+  file = "packager.yml"
+  dict = {} # Map from variable name to value
+  dirs = {} # Map from directory name or symbolic name to array of files
+
+  # Check if repository is clean
+  opts.force? || `git status --porcelain 2>/dev/null` == "" or raise "Repository is dirty"
+
+  # Collect command line variable settings
+  args.each { |expr|
+    expr =~ /^(.*?)=(.*)$/ or raise "Illegal expression: '#{expr}'"
+    dict[$1] = $2
+  }
+
+  yaml = YAML.load(IO.read(file).sub(/^__END__.*/m, ""))
+
+  # Parse QRPM file
+  rpm = Qrpm::Parser.parse(dict, yaml)
+
+  rpm.dump
+
+  rpm.build
+
+# puts "dict"
+# indent { dict.each { |k,v| puts "#{k}: #{v.inspect}" } }
+# puts
+# puts "dirs"
+# indent { dirs.each { |k,v| puts "#{k}: #{v.inspect}" } }
+# puts
+# puts "nodes"
+# indent { files.map(&:dump) }
+
+rescue RuntimeError => ex
+  ShellOpts.error ex.message
+end
+

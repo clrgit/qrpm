@@ -1,0 +1,47 @@
+
+Name: <%= name %>
+Summary: <%= summary %>
+Version: <%= version %>
+Release: <%= release %>
+License: <%= license %>
+Packager: <%= packager %>
+<% if group -%>
+Group: <%= group %>
+<% end -%>
+Source: %{name}.tar.gz
+BuildRoot: <%= root %>/tmp/%{name}-%{version}
+
+%description
+<%= description %>
+
+%prep
+
+%setup -n <%= tardir %>
+
+%build
+
+%install
+mkdir -p <%= files.map { |f| "#{root}#{f.directory}" }.uniq.join(" ") %>
+<% for file in files -%>
+cp <%= file.file %> %{buildroot}<%= file.path %>
+<% end -%>
+
+%files
+<% for file in files -%>
+<%= file.path %>
+<% end -%>
+
+%clean
+%if "%{clean}" != ""
+  rm -rf %{_topdir}/BUILD/%{name}
+  [ $(basename %{buildroot}) == "%{name}-%{version}-%{release}.%{_target_cpu}" ] && rm -rf %{buildroot}
+%endif
+
+%post
+<% for file in files.select(&:perm) -%>
+chmod <%= file.perm %> <%= file.path %>
+<% end -%>
+<% for file in links -%>
+ln -s <%= file.link %> <%= file.path %>
+<% end -%>
+
