@@ -49,12 +49,8 @@ module Qrpm
         elsif dir =~ /^pck(.*)$/ && DIRS.key?($1)
           dir = "#{DIRS[$1]}/#{fields["name"]}"
         end
-
         [dir, files]
       }.to_h
-
-      # Expand variables in directory and file names
-      expand_dirs
 
       # Build files
       dirs.each { |dir, nodes|
@@ -97,6 +93,7 @@ module Qrpm
     DIRS = {
       "etcdir" => "/etc",
       "bindir" => "/usr/bin",
+      "sbindir" => "/usr/sbin",
       "libdir" => "/usr/lib",
       "libexec" => "/usr/libexec",
       "sharedir" => "/usr/share",

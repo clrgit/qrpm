@@ -14,6 +14,7 @@ module Qrpm
 
     attr_reader :fields
     attr_reader :nodes
+
     def files() @files ||= nodes.select(&:file?) end
     def links() @lines ||= nodes.select(&:link?) end
 
@@ -25,30 +26,41 @@ module Qrpm
     end
 
     def build
-      Dir.mktmpdir { |root|
-        root = "tmp"
-        FileUtils.rm_rf root
-        FileUtils.mkdir root
-        specfile = "#{root}/SPECS/#{name}.spec"
-        tarfile = "#{root}/SOURCES/#{name}.tar.gz"
-        tardir = ::File.basename(Dir.getwd)
+      tarfile = "#{name}.tar.gz"
+
+      Dir.mktmpdir { |rootdir|
+        rootdir = "tmp" # FIXME
+        FileUtils.rm_rf rootdir # FIXME
+        FileUtils.mkdir rootdir # FIXME
+
+        specfile = "#{rootdir}/SPECS/#{name}.spec"
+        tarfile = "#{rootdir}/SOURCES/#{name}.tar.gz"
+        tmpdir = "#{rootdir}/tmp"
 
         # Create directories
-        RPM_DIRS.each { |dir| FileUtils.mkdir "#{root}/#{dir}" }
+        RPM_DIRS.each { |dir| FileUtils.mkdir "#{rootdir}/#{dir}" }
+
+        # Directory for tarball creation
+        tarroot = "#{tmpdir}/#{name}"
+        FileUtils.mkdir(tarroot)
+
+        # Copy files
+        tar_files = files.map { |f| f.file }.join(" ")
+        system "tar cf - #{tar_files} | tar xf - -C #{tarroot}"
+
+        # Roll tarball
+        system "tar zcf #{tarfile} -C #{tmpdir} #{name}" or raise "Can't roll tarball"
+
+        # Remove temporary tar dir
+        FileUtils.rm_rf tarroot
 
         # Create spec file
         renderer = ERB.new(IO.read(@template).sub(/^__END__\n.*/m, ""), trim_mode: "-")
         puts renderer.result(binding)
+
         IO.write(specfile, renderer.result(binding))
 
-        # Compute tar files
-        tar_files = files.map { |f| "#{tardir}/#{f.file}" }
-
-        # Create source tarball
-        system "cd ..; tar zcf #{tardir}/#{tarfile} #{tar_files.join(" ")}" or 
-            ShellOpts::failure "Can't roll tarball"
-
-        system "rpmbuild -v -bb --define \"_topdir #{Dir.getwd}/tmp\" tmp/SPECS/HEJ.spec"
+        system "rpmbuild -v -bb --define \"_topdir #{Dir.getwd}/tmp\" tmp/SPECS/#{name}.spec"
       }
     end
 
@@ -63,3 +75,4 @@ module Qrpm
     end
   end
 end
+

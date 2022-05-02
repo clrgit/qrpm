@@ -17,12 +17,17 @@ begin
 
     -f,force
       Create package even if repository is dirty
+
+    -C,directory=DIR
+      Change to directory before doing anything else
   )
 
   opts, args = ShellOpts.process(SPEC, ARGV)
 
-  #file = args.extract(-1)
-  file = "packager.yml"
+  Dir.chdir(opts.directory) if opts.directory?
+
+  file = args.extract(-1)
+# file = "packager.yml"
   dict = {} # Map from variable name to value
   dirs = {} # Map from directory name or symbolic name to array of files
 

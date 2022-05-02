@@ -9,8 +9,8 @@ module Qrpm
       @directory, @name = directory, name
     end
 
-    def file?() self.class == File end
-    def link?() self.class == Node end
+    def file?() self.class == Qrpm::File end
+    def link?() self.class == Qrpm::Link end
 
     def dump(&block)
       puts self.class
@@ -39,6 +39,7 @@ module Qrpm
 
   class Link < Node
     attr_reader :link # Destination file of link
+
     def initialize(directory, name, link)
       super(directory, name || link.sub(/.*\//, ""))
       @link = link

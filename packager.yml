@@ -3,7 +3,7 @@ name: my_package_name$pg_version
 summary: This is a summary of the package
 description: Optional longer description of the package
 version: 1.2.3
-release: $pg_version:$perm
+release: $pg_version.$perm
 packager: null
 requires:
   - ruby
@@ -28,55 +28,5 @@ pcksharedir:
 
 vardir:
   - $root/share/some_other_data
-
-
-
-__END__
----
-# Requires $VERSION
-#          $PG_VERSION
-
-name: my_package_name$pg_version
-summary: This is a summary of the package
-description: Optional longer description of the package
-version: 1.2.3
-release: $pg_version:$perm
-packager: null
-requires:
-  - ruby
-  - apache
-  - postgres$pg_version
-
-pg_version: 13
-perm: 755
-
-bindir:
-  - exe/some_file
-  - link: /usr/pgsql-$pg_version/share/extensions/url_encode.control
-
-pckbindir:
-  - exe/someotherfile
-
-/usr/pgsql-$pg_version/bin:
-  - file: exe/url_encode
-    perm: $perm
-
-/usr/pgsql-$pg_version/lib:
-  - src/url_encode.so
-  - src/$pg_version/somewhre
-
-/usr/pgsql-$pg_version/share/extensions:
-  - url_encode.control
-  - sql/url_encode--1.2.sql
-
-
-# class Node
-# end
-
-# class File
-#   attr_reader :
-# end
-#
-# class Link
 
 

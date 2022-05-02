@@ -9,26 +9,31 @@ Packager: <%= packager %>
 Group: <%= group %>
 <% end -%>
 Source: %{name}.tar.gz
-BuildRoot: <%= root %>/tmp/%{name}-%{version}
+BuildRoot: <%= rootdir %>/tmp/%{name}-%{version}
 
 %description
 <%= description %>
 
 %prep
-
-%setup -n <%= tardir %>
+%setup -n <%= name %>
 
 %build
 
 %install
-mkdir -p <%= files.map { |f| "#{root}#{f.directory}" }.uniq.join(" ") %>
+mkdir -p <%= nodes.map { |f| "%{buildroot}#{f.directory}" }.uniq.join(" ") %>
 <% for file in files -%>
 cp <%= file.file %> %{buildroot}<%= file.path %>
+<% end -%>
+<% for link in links -%>
+touch %{buildroot}<%= link.path %>
 <% end -%>
 
 %files
 <% for file in files -%>
 <%= file.path %>
+<% end -%>
+<% for link in links -%>
+%ghost <%= link.path %>
 <% end -%>
 
 %clean
@@ -41,7 +46,7 @@ cp <%= file.file %> %{buildroot}<%= file.path %>
 <% for file in files.select(&:perm) -%>
 chmod <%= file.perm %> <%= file.path %>
 <% end -%>
-<% for file in links -%>
-ln -s <%= file.link %> <%= file.path %>
+<% for file in links %>
+ln -sf <%= link.link %> <%= link.path %>
 <% end -%>
 

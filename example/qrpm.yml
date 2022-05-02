@@ -1,0 +1,28 @@
+
+name: my_package_name
+summary: This is a summary of the package
+description: Optional longer description of the package
+version: 1.2.3
+release: 4
+packager: null
+requires:
+  - ruby
+  - apache
+  - postgres
+
+bindir:
+  - bin/a_file
+  - bin/another_file
+  - name: an_alias
+    file: bin/a_file
+
+sbindir:
+  - link: /bin/a_file
+
+pcksharedir:
+  - share/some_data
+
+vardir:
+  - share/some_other_data
+
+
