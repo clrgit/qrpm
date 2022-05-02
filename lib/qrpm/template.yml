@@ -1,0 +1,88 @@
+
+# Package information
+#
+name:           # Name of package. It is used in the package name
+summary:        # Short summary of package
+description:    # Optional longer description
+version:        # Version
+release:        # Release. Optional
+packager:       # Packager, default $USER
+requires:       # List of required packages
+
+# Build information
+#
+make: null      # make can be undefined or null (use make if present), false
+                # (don't use make), true (use make), or a list of shell
+                # commands to build the project
+
+# Directories, files, and links
+#
+# This section contains entries that are (possibly empty) directories with a
+# array of files or links.  Directories can either identify a builtin standard
+# directory or be a path to a directory. In the typical case, the directory
+# will contain a simple list of files from the build directory:
+#
+#   bindir:
+#     - my_bin_files/my_program
+#     - my_sh_files/my_shell_script
+#
+#   /opt/my_files:
+#     - src/my_data
+#     
+# The example will create the following files and directories
+#
+#   /usr/bin/my_program
+#   /usr/bin/my_shell_script
+#   /opt/my_files/
+#   /opt/my_files/my_data
+#
+# Files can also be specified using the following attributes
+#
+#   name: Destination file name. Default is the last path component in :file
+#   file: Path to source file
+#   perm: Octal permissions. Defaults are the source file's permissions
+#
+# It is used like this
+#   
+#   /opt/my_files
+#     - name: data
+#       file: src/my_data
+#       perm: 600
+#
+# This will copy src/my_data to a 'data' file in the /opt/my_files directory
+# with permissions 0600
+#
+# Links can only be specified using attributes
+#
+#   name: Destination file name. Default is the last path component in :link
+#   link: Path to the file that will be pointed to by the link
+#
+# To create a symbolic link in /var/lib/ from my_app to /opt/my_files/data:
+#
+#   libdir:
+#     - name: my_app
+#       link: /opt/my_files/data
+#
+# The following standard directories are defined:
+#
+#   etcdir            /etc            Configuration files
+#   bindir            /usr/bin        Executables
+#   sbindir           /usr/sbin       System executables
+#   libdir            /usr/lib        Libraries (both binary and clear text)
+#   libexecdir        /usr/libexec    Executable subprograms (not meant to be 
+#                                     called indepentently)
+#   sharedir          /usr/share      Constant data files. FIXME: Always a subdir
+#   vardir            /var/lib        Variable data files
+#   spooldir          /var/spool      Spool files
+#   rundir            /var/run        Run files
+#   lockdir           /var/lock       Lock files
+#   cachedir          /var/cache      Cache directory
+#   tmpdir            /tmp            Temporary directory (deleted when the '
+#                                     machine starts)
+#   logdir            /var/log        Log directory
+#
+# Each standard directory can also be prefixed a 'pck'. That will create a
+# subdirectory with the package's name in the base standard directory. Eg.
+# 'pcketcdir' will create the directory '/etc/<name>'
+#
+

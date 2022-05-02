@@ -10,9 +10,8 @@ requires:
   - httpd
   - postgresql13
 
-make: # List of files
-  - my_configure --prefix=gryf
-  - my_make
+make: # List of commands to build project
+  - echo "Hej du" > bin/another_file
 
 bindir:
   - bin/a_file

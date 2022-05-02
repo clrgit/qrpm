@@ -59,14 +59,14 @@ module Qrpm
             when Hash
               node = node.dup
               if node.key?("file")
-                file = node.delete("file")
                 name = node.delete("name")
+                file = node.delete("file")
                 perm = node.delete("perm")
                 node.empty? or raise "Illegal keys for file in directory #{dir}: #{node.keys}"
                 files << Qrpm::File.new(dir, name, file, perm)
               elsif node.key?("link")
-                link = node.delete("link")
                 name = node.delete("name")
+                link = node.delete("link")
                 node.empty? or raise "Illegal keys for link in directory #{dir}: #{node.keys}"
                 files << Qrpm::Link.new(dir, name, link)
               else
@@ -95,7 +95,7 @@ module Qrpm
       "bindir" => "/usr/bin",
       "sbindir" => "/usr/sbin",
       "libdir" => "/usr/lib",
-      "libexec" => "/usr/libexec",
+      "libexecdir" => "/usr/libexec",
       "sharedir" => "/usr/share",
       "vardir" => "/var/lib",
       "spooldir" => "/var/spool",

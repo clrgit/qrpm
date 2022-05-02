@@ -28,8 +28,16 @@ BuildRoot: <%= rootdir %>/tmp/%{name}-%{version}
 <% if has_make? -%>
 make
 <% end -%>
-<% elsif make -%>
-<%= make %>
+<% elsif make == false -%>
+<% elsif make == true -%>
+<% if has_configure? -%>
+./configure
+<% end -%>
+make
+<% elsif make.is_a? Array -%>
+<% for cmd in make -%>
+<%= cmd %>
+<% end -%>
 <% end -%>
 
 %install
