@@ -28,8 +28,10 @@ module Qrpm
 
     def build(subject: all)
       Dir.mktmpdir { |rootdir|
-        specfile = "#{rootdir}/SPECS/#{name}.spec"
-        tarfile = "#{rootdir}/SOURCES/#{name}.tar.gz"
+        spec_file = "#{name}.spec"
+        tar_file = "#{name}.tar.gz"
+        spec_path = "#{rootdir}/SPECS/#{spec_file}"
+        tar_path = "#{rootdir}/SOURCES/#{tar_file}"
 
         # Create directories
         RPM_DIRS.each { |dir| FileUtils.mkdir "#{rootdir}/#{dir}" }
@@ -43,7 +45,7 @@ module Qrpm
         system "tar cf - #{tar_files} | tar xf - -C #{tarroot}"
 
         # Roll tarball
-        system "tar zcf #{tarfile} -C #{rootdir}/tmp #{name}" or raise "Can't roll tarball"
+        system "tar zcf #{tar_path} -C #{rootdir}/tmp #{name}" or raise "Can't roll tarball"
 
         # Remove temporary tar dir
         FileUtils.rm_rf tarroot
@@ -52,15 +54,17 @@ module Qrpm
         renderer = ERB.new(IO.read(@template).sub(/^__END__\n.*/m, ""), trim_mode: "-")
         @spec = renderer.result(binding)
 
-        return if subject == :spec
+        if subject == :spec
+          IO.write(spec_file, @spec)
+        else
+          IO.write(spec_path, @spec)
 
-        IO.write(specfile, @spec)
+          system "rpmbuild -v -bb --define \"_topdir #{rootdir}\" #{rootdir}/SPECS/#{name}.spec" or
+              raise "Failed building RPM file"
 
-        system "rpmbuild -v -bb --define \"_topdir #{rootdir}\" #{rootdir}/SPECS/#{name}.spec" or
-            raise "Failed building RPM file"
-
-        system "cp #{rootdir}/RPMS/*/#{name}-[0-9]* ." or
-            raise "Failed copying .RPM file"
+          system "cp #{rootdir}/RPMS/*/#{name}-[0-9]* ." or
+              raise "Failed copying .RPM file"
+        end
       }
     end
 

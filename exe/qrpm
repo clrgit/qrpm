@@ -15,6 +15,9 @@ begin
 
     -- VARIABLE=VALUE... QRPM-FILE
 
+    -s,spec
+      Only create the spec file and not the RPM package
+
     -f,force
       Create package even if repository is dirty
 
@@ -45,7 +48,9 @@ begin
 
 # rpm.dump
 
-  rpm.build(subject: :spec)
+  subject = (opts.spec? ? :spec : :all)
+  rpm.build(subject: subject)
+
 
 rescue RuntimeError => ex
   ShellOpts.error ex.message
