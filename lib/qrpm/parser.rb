@@ -32,15 +32,25 @@ module Qrpm
         fields.key?(f) or raise "Missing mandatory variable: #{f}"
       }
 
+      # Get full name of user
+      fullname = Etc.getpwnam(ENV['USER'])&.gecos
+      if fullname.nil? || fullname == ""
+        fullname = ENV['USER']
+      end
+
       # Defaults for description and packager fields
       fields["description"] ||= fields["summary"]
-      fields["packager"] ||= ENV['USER']
+      fields["packager"] ||= fullname
       fields["release"] ||= "0"
       fields["license"] ||= "GPL"
 
       # Expand variables in fields. The expansion mechanism doesn't depend on the order
       # of the variables
       expand_fields
+
+      # Expand variables in directory entries. The algorithm is simpler than in
+      # #expand_fields because no further variable defitinitions can happend
+      expand_dirs
 
       # Replace symbolic directory names
       @dirs = dirs.map { |dir, files|
@@ -122,7 +132,7 @@ module Qrpm
 
     # Expand variables in the given string
     #
-    # The method takes case to substite left-to-rigth to avoid a variable expansion
+    # The method takes care to substite left-to-rigth to avoid a variable expansion
     # to infer with the name of an immediately preceding variable. Eg. $a$b; if $b
     # is resolved to 'c' then a search would otherwise be made for a variable named
     # '$ac' 

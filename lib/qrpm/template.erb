@@ -41,12 +41,14 @@ make
 <% end -%>
 
 %install
+<% if !nodes.empty? -%>
 mkdir -p <%= nodes.map { |f| "%{buildroot}#{f.directory}" }.uniq.join(" ") %>
 <% for file in files -%>
 cp <%= file.file %> %{buildroot}<%= file.path %>
 <% end -%>
 <% for link in links -%>
 touch %{buildroot}<%= link.path %>
+<% end -%>
 <% end -%>
 
 %files

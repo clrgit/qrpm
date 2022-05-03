@@ -12,6 +12,7 @@ require 'indented_io'
 # TODO
 #   o Fix BuildRoot (contains absolute path)
 #   o Enable escape of $
+#   o Separate standard variable from user-variables in dump
 
 begin
   SPEC = %(
@@ -76,9 +77,6 @@ begin
   file ||= Qrpm::QRPM_CONFIG_FILE
   ::File.exist?(file) or raise "Can't find '#{file}'"
 
-  # Check if repository is clean
-  opts.force? || `git status --porcelain 2>/dev/null` == "" or raise "Repository is dirty"
-
   # Load the qrpm configuration file
   yaml = YAML.load(IO.read(file).sub(/^__END__\s*$/m, ""))
 
@@ -89,6 +87,9 @@ begin
     rpm.dump
     exit
   end
+
+  # Check if repository is clean
+  opts.force? || `git status --porcelain 2>/dev/null` == "" or raise "Repository is dirty"
 
   target = (opts.spec? ? :spec : (opts.source? ? :srpm : :rpm))
   rpm.build(target: target, file: opts.spec)

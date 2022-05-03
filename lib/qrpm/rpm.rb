@@ -11,8 +11,9 @@ module Qrpm
     #   license     License (defaults to GPL)
     #   summary     Short one-line description of package
     #   description Description
-    #   packager    Name of the packager (defaults to the value of the $USER 
-    #               environment variable)
+    #   packager    Name of the packager (defaults to the name of the current
+    #               user or the value of the $USER environment variable if not
+    #               found)
     #   require     Array of required packages
     #   make        Controls the build process:
     #                 null    Search the top-level directory for configure or
@@ -52,7 +53,6 @@ module Qrpm
 
     def build(target: :rpm, file: nil)
       Dir.mktmpdir { |rootdir|
-        rootdir = "/home/clr/prj/qrpm/tmp"
         FileUtils.rm_rf(rootdir)
         FileUtils.mkdir_p(rootdir)
 
