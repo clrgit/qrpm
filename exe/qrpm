@@ -73,7 +73,7 @@ begin
   args.empty? or args.expect(0) # Generates an illegal-number-of-arguments error
 
   # Check configuration file
-  file ||= QRPM_CONFIG_FILE
+  file ||= Qrpm::QRPM_CONFIG_FILE
   ::File.exist?(file) or raise "Can't find '#{file}'"
 
   # Check if repository is clean
