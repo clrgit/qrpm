@@ -116,6 +116,25 @@ module Qrpm
       "logdir" => "/var/log"
     }
 
+    # TODO TODO TODO
+
+    # Expand shell expansions ($(shell command))
+    #
+    def expand_shell_commands(object)
+      case object
+        when Array; object.map { |e| expand_shell_commands(e) }
+        when Hash; object.map { |k,v| [k, expand_shell_commands(v)] }.to_h
+        when String; 
+          puts object.scan(/\$\(([^\)]+)\)/)
+          object.scan(/\$\(([^\)]+)\)/)
+
+        when Integer, Float, true, false, nil; object
+      else
+        raise "Illegal object: #{object}"
+      end
+    end
+
+
     # Returns array of variables in the object. Variables can be either '$name' or
     # '${name}'. The variables are returned in left-to-right order
     #
