@@ -43,15 +43,20 @@ module Qrpm
     def files() @files ||= nodes.select(&:file?) end
     def links() @lines ||= nodes.select(&:link?) end
 
+    def verbose?() @verbose end
+
+    def initialize(fields, nodes, template: TEMPLATE, verbose: false)
+      @fields, @nodes = fields, nodes
+      @template = template
+      @verbose = verbose
+      @verb = verbose ? "" : "&>/dev/null"
+    end
+
     def has_configure?() ::File.exist? "configure" end
     def has_make?() ::File.exist? "make" end
 
-    def initialize(fields, nodes, template: TEMPLATE)
-      @fields, @nodes = fields, nodes
-      @template = template
-    end
-
-    def build(target: :rpm, file: nil)
+    def build(target: :rpm, file: nil, verbose: false)
+      verb = verbose ? "" : "&>/dev/null"
       Dir.mktmpdir { |rootdir|
         FileUtils.rm_rf(rootdir)
         FileUtils.mkdir_p(rootdir)
@@ -73,7 +78,7 @@ module Qrpm
         FileUtils.cp_r(".", tarroot, preserve: true)
         
         # Roll tarball and put it in the SOURCES directory
-        system "tar zcf #{tar_path} -C #{rootdir}/tmp #{name}" or raise "Can't roll tarball"
+        system "tar zcf #{tar_path} -C #{rootdir}/tmp #{name} #{verb}" or raise "Can't roll tarball"
 
         # Remove temporary tar dir
         FileUtils.rm_rf tarroot
@@ -87,8 +92,8 @@ module Qrpm
           IO.write(spec_file, @spec)
         else
           IO.write(spec_path, @spec)
-          system "rpmbuild -v -ba --define \"_topdir #{rootdir}\" #{rootdir}/SPECS/#{name}.spec" or
-              raise "Failed building RPM file"
+          system "rpmbuild -v -ba --define \"_topdir #{rootdir}\" #{rootdir}/SPECS/#{name}.spec #{verb}" or
+              raise "Failed building RPM file. Re-run with -v option to see errors"
           if target == :srpm
             system "cp #{rootdir}/SRPMS/* ." or raise "Failed copying SRPM file"
           elsif target == :rpm
