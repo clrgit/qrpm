@@ -45,7 +45,8 @@ begin
       files
 
     -C,directory=EDIR
-      Change to directory before doing anything else
+      Change to directory before doing anything else. Output files are still
+      created in the current directory, though
 
     -d,dump
       Dump internal data and exit. For debug
@@ -53,6 +54,7 @@ begin
 
   opts, args = ShellOpts.process(SPEC, ARGV, verbose: true)
 
+  currdir = Dir.getwd
   Dir.chdir(opts.directory) if opts.directory?
 
   if opts.template?
@@ -93,7 +95,7 @@ begin
   opts.force? || `git status --porcelain 2>/dev/null` == "" or raise "Repository is dirty"
 
   target = (opts.spec? ? :spec : (opts.source? ? :srpm : :rpm))
-  rpm.build(target: target, file: opts.spec, verbose: opts.verbose?)
+  rpm.build(target: target, file: opts.spec, verbose: opts.verbose?, destdir: currdir)
 
 rescue RuntimeError => ex
   ShellOpts.error ex.message

@@ -55,7 +55,7 @@ module Qrpm
     def has_configure?() ::File.exist? "configure" end
     def has_make?() ::File.exist? "make" end
 
-    def build(target: :rpm, file: nil, verbose: false)
+    def build(target: :rpm, file: nil, verbose: false, destdir: ".")
       verb = verbose ? "" : "&>/dev/null"
       Dir.mktmpdir { |rootdir|
         FileUtils.rm_rf(rootdir)
@@ -89,15 +89,15 @@ module Qrpm
 
         # Emit spec or build RPM
         if target == :spec
-          IO.write(spec_file, @spec)
+          IO.write("#{destdir}/#{spec_file}", @spec)
         else
           IO.write(spec_path, @spec)
           system "rpmbuild -v -ba --define \"_topdir #{rootdir}\" #{rootdir}/SPECS/#{name}.spec #{verb}" or
               raise "Failed building RPM file. Re-run with -v option to see errors"
           if target == :srpm
-            system "cp #{rootdir}/SRPMS/* ." or raise "Failed copying SRPM file"
+            system "cp #{rootdir}/SRPMS/* #{destdir}" or raise "Failed copying SRPM file"
           elsif target == :rpm
-            system "cp #{rootdir}/RPMS/*/#{name}-[0-9]* ." or raise "Failed copying RPM file"
+            system "cp #{rootdir}/RPMS/*/#{name}-[0-9]* #{destdir}" or raise "Failed copying RPM file"
           else
             raise ArgumentError, "Not a valid value for :target - #{target.inspect}"
           end
