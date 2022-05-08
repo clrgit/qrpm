@@ -92,7 +92,7 @@ begin
   end
 
   # Check if repository is clean
-  opts.force? || `git status --porcelain 2>/dev/null` == "" or raise "Repository is dirty"
+  opts.force? || `git status --porcelain | grep -v '??' 2>/dev/null` == "" or raise "Repository is dirty"
 
   target = (opts.spec? ? :spec : (opts.source? ? :srpm : :rpm))
   rpm.build(target: target, file: opts.spec, verbose: opts.verbose?, destdir: currdir)
