@@ -45,14 +45,16 @@ begin
       files
 
     -C,directory=EDIR
-      Change to directory before doing anything else
+      Change to directory before doing anything else. Output files are still
+      created in the current directory, though
 
     -d,dump
-      Dump internal data and exit
+      Dump internal data and exit. For debug
   )
 
-  opts, args = ShellOpts.process(SPEC, ARGV)
+  opts, args = ShellOpts.process(SPEC, ARGV, verbose: true)
 
+  currdir = Dir.getwd
   Dir.chdir(opts.directory) if opts.directory?
 
   if opts.template?
@@ -61,7 +63,8 @@ begin
     exit
   end
 
-  # Collect var=val settings in the dict hash and sets the configuration file
+  # Collect var=val settings into the dict hash and sets the configuration file
+  # if present
   dict = {}
   while arg = args.extract(0..1)
     if arg =~ /^(.*?)=(.*)$/
@@ -89,10 +92,10 @@ begin
   end
 
   # Check if repository is clean
-  opts.force? || `git status --porcelain 2>/dev/null` == "" or raise "Repository is dirty"
+  opts.force? || `git status --porcelain | grep -v '??' 2>/dev/null` == "" or raise "Repository is dirty"
 
   target = (opts.spec? ? :spec : (opts.source? ? :srpm : :rpm))
-  rpm.build(target: target, file: opts.spec)
+  rpm.build(target: target, file: opts.spec, verbose: opts.verbose?, destdir: currdir)
 
 rescue RuntimeError => ex
   ShellOpts.error ex.message
