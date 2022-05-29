@@ -6,7 +6,7 @@ module Qrpm
     attr_reader :fields # Hash from field to value (which can be of any type)
     attr_reader :dirs # Hash from directory to list of entries
     attr_reader :files # List of files
-    attr_reader :rpm # Resulting RPM object
+    attr_reader :rpm # Resulting Qrpm::Rpm object
 
     def initialize(fields)
       @fields = fields.dup
