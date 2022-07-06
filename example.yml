@@ -12,7 +12,8 @@ requires:
 pg_name: $(rpm -q -qf '%{NAME}\n' -f $(readlink -f $(which pg_config)))
 pg_version: $(pg_config --version | sed 's/^[^0-9]* \([0-9]\+\).*$/\1/')
 pg_libdir: $(pg_config --libdir)
-pg_extdir: $(pg_config --share)/extension
+pg_sharedir: $(pg_config --share)
+pg_extdir: ${pg_sharedir}/extension
 
 init:
   - git submodule init

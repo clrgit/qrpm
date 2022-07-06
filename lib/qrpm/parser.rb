@@ -18,16 +18,21 @@ module Qrpm
       # Collect .qrpm file variables and directories and the list of required
       # packages. Variables are merged into +fields+
       yaml.each { |k,v|
+        # Do shell expansion if needed
+        k = shell_expand(k)
+        v = shell_expand(v)
+
         if k =~ /[\/.]/ || DIRS.key?(k) || DIRS.key?(k.sub(/^pck/, ""))
           (dirs[k] ||= []).concat v
         elsif k =~ /^[\w_]+$/
           fields[k] = v if !fields.key?(k)
         else
+          puts "OOps: #{k.inspect}"
           raise "Illegal key/value: #{k}: #{v}"
         end
       }
 
-      # Check for mandatory variables
+      # Check for mandatory fields
       Rpm::MANDATORY_FIELDS.each { |f|
         fields.key?(f) or raise "Missing mandatory variable: #{f}"
       }
@@ -43,6 +48,9 @@ module Qrpm
       fields["packager"] ||= fullname
       fields["release"] ||= "0"
       fields["license"] ||= "GPL"
+
+      # Expand shell sub-commands ($(...) constructs)
+      expand_commands
 
       # Expand variables in fields. The expansion mechanism doesn't depend on the order
       # of the variables
@@ -118,20 +126,44 @@ module Qrpm
 
     # TODO TODO TODO
 
+    def shell_expand(s)
+      if s.is_a?(String) && s =~ /^\$\(/
+        puts "About to execute #{s.inspect}"
+        cmd = s[2..-2] # FIXME Not very robust
+        puts cmd
+        value = `#{s}` 
+        $?.exitstatus == 0 or raise "Illegal shell substitution: #{s}"
+        value
+      else
+        s
+      end
+    end
+
+
+
     # Expand shell expansions ($(shell command))
     #
     def expand_shell_commands(object)
       case object
         when Array; object.map { |e| expand_shell_commands(e) }
-        when Hash; object.map { |k,v| [k, expand_shell_commands(v)] }.to_h
+        when Hash; object.map { |k,v| 
+          [expand_shell_commands(k), expand_shell_commands(v)] 
+        }.to_h
         when String; 
-          puts object.scan(/\$\(([^\)]+)\)/)
-          object.scan(/\$\(([^\)]+)\)/)
+          # Doesn't count parenthesis
+          puts "#{object.inspect} > #{object.scan(/\$\(([^\)]+)\)/)}"
+          script = object.scan(/\$\(([^\)]+)\)/)
+          value = `#{script.join(";")}` if !script.empty?
+          $?.exitstatus == 0 or raise "Illegal substitution: #{script}"
 
         when Integer, Float, true, false, nil; object
       else
         raise "Illegal object: #{object}"
       end
+    end
+
+    def expand_commands
+      @fields = expand_shell_commands(@fields)
     end
 
 

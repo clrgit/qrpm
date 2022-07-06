@@ -13,10 +13,13 @@ require 'indented_io'
 #   o Fix BuildRoot (contains absolute path)
 #   o Enable escape of $
 #   o Separate standard variable from user-variables in dump
+#   o Support for $(...) constructs
 
 begin
   SPEC = %(
     @ Quick RPM builder
+
+    -- VARIABLE=VALUE... [QRPM-FILE]
 
     'qrpm' creates a RPM package from a simple YAML specification file
 
@@ -26,7 +29,21 @@ begin
     expanded. The variables can either be specified in the configuration file
     or given on the command line in <variable>=<value> format
 
-    -- VARIABLE=VALUE... [QRPM-FILE]
+    VARIABLE EXPANSION
+
+    SHELL COMMAND SUBSTITUTION
+      You can expand $(...) constructs too but they should define the whole value
+      or key, it is not possible to use a shell command to get some part of a
+      value and write the rest as a literal:
+
+        v: $(some_command)some_text # Illegal
+
+      Do it step-wise instead:
+
+        v: $(some_command) # Legal
+        w: ${v}some_text
+
+      The restriction makes the parser much simpler
 
     -t,template=OFILE?
       Generate a template qrpm.yml file in the current directory. Customize it
