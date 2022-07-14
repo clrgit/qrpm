@@ -5,15 +5,14 @@ module Qrpm
   class Rpm
     # Defines the following member methods:
     #
-    #   name        Package name
-    #   version     Version
+    #   name        Package name (mandatory)
+    #   version     Version (mandatory)
     #   release     Release
     #   license     License (defaults to GPL)
-    #   summary     Short one-line description of package
+    #   summary     Short one-line description of package (mandatory)
     #   description Description
-    #   packager    Name of the packager (defaults to the name of the current
-    #               user or the value of the $USER environment variable if not
-    #               found)
+    #   packager    Name of the packager (defaults to the name of the user or 
+    #               $USER@$HOSTNAME if not found)
     #   require     Array of required packages
     #   make        Controls the build process:
     #                 null    Search the top-level directory for configure or
@@ -27,8 +26,8 @@ module Qrpm
     #
     FIELDS = %w(name version release group license summary description packager requires make)
     MANDATORY_FIELDS = %w(name summary version)
-    TEMPLATE = "#{::File.dirname(__FILE__)}/template.erb"
 
+    TEMPLATE = "#{::File.dirname(__FILE__)}/template.erb"
     RPM_DIRS = %w(SOURCES BUILD RPMS SPECS SRPMS tmp)
 
     # Field accessor methods
@@ -69,19 +68,12 @@ module Qrpm
         # Create directories
         RPM_DIRS.each { |dir| FileUtils.mkdir_p "#{rootdir}/#{dir}" }
 
-        # Directory for tarball creation. This lives inside the RPM directory
-        # structure and is removed before we start rpmbuild
-        tarroot = "#{rootdir}/tmp/#{name}"
-        FileUtils.mkdir(tarroot)
-
-        # Copy files
-        FileUtils.cp_r(".", tarroot, preserve: true)
-        
-        # Roll tarball and put it in the SOURCES directory
-        system "tar zcf #{tar_path} -C #{rootdir}/tmp #{name} #{verb}" or raise "Can't roll tarball"
-
-        # Remove temporary tar dir
-        FileUtils.rm_rf tarroot
+        # Roll tarball
+        #
+        # It is a bad idea to use git-archive to roll a tarball because we may have 
+        # configuration files/scripts that are not included in the git repository. If
+        # needed then see https://gist.github.com/arteymix/03702e3eb05c2c161a86b49d4626d21f
+        system "tar zcf #{tar_path} --transform=s%^\./%#{name}/% ."
 
         # Create spec file
         renderer = ERB.new(IO.read(@template).sub(/^__END__\n.*/m, ""), trim_mode: "-")
