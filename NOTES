@@ -1,0 +1,7 @@
+
+Random notes that should make it into the documention
+
+o Directory nodes are top-level array definitions, optionally suffix with a /
+o Only DirectoryNode keys can include a '/'
+o Only DirectoryNode keys can include variables. What about this:
+o DirectoryNodes can't be referenced

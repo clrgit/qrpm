@@ -1,0 +1,30 @@
+o Rule: Symbol keys are variables, String keys are directories
+
+o Use Nodes everywhere -> makes a lot of stuff much easier
+
+o Check "dir: file" vs. "dir:\n  - file"
+
+o Allow shell escapes to return arrays and hashes
+
+o Allow directories within directories:
+    dir/
+      - file
+      - subdir/
+        - element # Oops: Illegal YAML syntax
+
+o What happens if directory declarations maps to the same:
+  dir1: dir
+  dir2: dir
+  $dir1:
+    - file
+  $dir2:
+    - file
+
+o Use same naming everywhere: field vs. value, name vs. path etc.
+  - "fields" are variables that also are RPM fields
+  - "variables" are QRPM variables
+
+o Better references to source in error messages: Read input file(s) in parallel
+  with parsing of the YAML document (doesn't work with YAML merge/include). Maybe
+  decorate strings with lineno/charno and if the YAML module fails we catch the
+  error and remove the decoration from the error message

@@ -11,8 +11,6 @@ Gem::Specification.new do |spec|
   spec.summary       = "Gem qrpm"
   spec.description   = "Gem qrpm"
   spec.homepage      = "http://www.nowhere.com/"
-  spec.required_ruby_version = ">= 2.4.0"
-
 
   spec.metadata["homepage_uri"] = spec.homepage
 
@@ -27,8 +25,10 @@ Gem::Specification.new do |spec|
   spec.executables   = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
-  spec.add_dependency "shellopts", "~> 2.0.0"
+  spec.add_dependency "shellopts", "~> 2.1.1"
   spec.add_dependency "indented_io"
+  spec.add_dependency "constrain"
+  spec.add_dependency "forward_to"
 
   # Uncomment to register a new dependency of your gem
   # spec.add_dependency "example-gem", "~> 1.0"

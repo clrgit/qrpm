@@ -1,0 +1,55 @@
+# Qrpm with "functions"
+---
+
+# User-code
+#
+pg:
+  vendor: pgdg
+
+$user_dir:
+  - $pg.postgresql_conf
+
+# Standard global variables
+#   platform (redhat/debian/etc)
+#   vendor (only defined for third-party packages)
+#   domain (the network)
+#   host (the host)
+#
+#   The standard variables are ordered
+
+pg:
+  etcdir: $(detect)
+  datadir: $(detect)
+  postgresql_conf: ${pg.etcdir}/postgresql.conf
+  pg_hba_conf: ${pg.etcdir}/pg_hba.conf
+  pg_ident_conf: ${pg.etcdir}/pg_ident.conf
+
+pg(platform=redhat):
+  etcdir: ${pg.datadir}
+  datadir: $pcklidir/data
+
+pg(platform=debian):
+  etcdir: $pcketcdir
+  datadir: /var/lib/pgsql/data
+
+# 'plaform=*' to make this more specific than the default. Not needed if
+# standard variables are ordered
+pg(platform=*,vendor=pgdg):
+  datadir: $pcklibdir/${pg.version}/data
+
+pg(platform=debian,vendor=pgdg):
+  etcdir: $pcketcdir/${pg.version}
+
+pg(platform=redhat,vendor=pgdg):
+  etcdir: ${pg.datadir}
+  
+# nested expressions
+#
+pg(vendor=pgdg):
+  datadir: $pcklibdir/${pg.version}/data
+  platform=redhat:
+    etcdir: ${pg.datadir}
+  platform=debian:
+    etcdir: $pckectdir/${pg.version}
+
+  

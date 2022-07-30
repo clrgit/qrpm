@@ -45,7 +45,7 @@ make: null      # make can be undefined or null (use make if present), false
 #
 # It is used like this
 #   
-#   /opt/my_files
+#   /opt/my_files:
 #     - name: data
 #       file: src/my_data
 #       perm: 600
@@ -53,18 +53,17 @@ make: null      # make can be undefined or null (use make if present), false
 # This will copy src/my_data to a 'data' file in the /opt/my_files directory
 # with permissions 0600
 #
-# Links can only be specified using attributes
+# Link files are specified using the :link attribute that is a path on the
+# target system:
 #
-#   name: Destination file name. Default is the last path component in :link
-#   link: Path to the file that will be pointed to by the link
-#
-# To create a symbolic link in /var/lib/ from my_app to /opt/my_files/data:
-#
-#   libdir:
-#     - name: my_app
+#   /opt/my_files:
+#     - name: linked_data
 #       link: /opt/my_files/data
 #
-# The following standard directories are defined:
+# Default name for link files is the basename of of :link
+#
+#
+# The following standard directories are defined: FIXME Outdated
 #
 #   etcdir            /etc            Configuration files
 #   bindir            /usr/bin        Executables
@@ -72,15 +71,19 @@ make: null      # make can be undefined or null (use make if present), false
 #   libdir            /usr/lib        Libraries (both binary and clear text)
 #   libexecdir        /usr/libexec    Executable subprograms (not meant to be 
 #                                     called indepentently)
-#   sharedir          /usr/share      Constant data files. FIXME: Always a subdir
+#   sharedir          /usr/share      Constant data files
 #   vardir            /var/lib        Variable data files
 #   spooldir          /var/spool      Spool files
 #   rundir            /var/run        Run files
 #   lockdir           /var/lock       Lock files
 #   cachedir          /var/cache      Cache directory
-#   tmpdir            /tmp            Temporary directory (deleted when the '
-#                                     machine starts)
+#   tmpdir            /tmp            Temporary directory (deleted between restarts)
+#   vartmpdir         /var/tmp        TODO
 #   logdir            /var/log        Log directory
+#
+#   pckdir            <package-name>  Name of package directory. It is always the
+#                                     name of the directory in /usr/share
+#
 #
 # Each standard directory can also be prefixed a 'pck'. That will create a
 # subdirectory with the package's name in the base standard directory. Eg.

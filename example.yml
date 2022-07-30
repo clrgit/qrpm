@@ -1,30 +1,84 @@
 # QRPM configuration file. See https://github.com/clrgit/qrpm
 
+# program ::= directory...
+# directory ::= field... directory...
+# field ::= key '*' value
+# directory ::= array(string)
+#
+# TODO
+#   o Use '@' instead of '$'. Yields @name and @{name} that doesn't interfere
+#     with bash expansion
+#   
+#
+# ${{name}} in $(...)
+#   QRPM dependency check variable definitions and needs to be able to detect
+#   variable usages in $(...) constructs
+
+# @include git-project
+#   -> version: $(cd ${{srcdir}}; git tag | tail -1 | sed 's/^v//')
+#      
+# @include postgres-project prefix: pg_
+#   -> pg_name
+#      pg_version
+#      pg_libdir
+#      pg_sharedir
+#
+# @include postgres-project git@github.com:... commit-id
+#
+# @include redhat/httpd
+# @include redhat/pg
+# @include pgdg
+#
+# pg.version: 14
+# pg: pgdg[14]
+
 name: $pg_name-url_encode
-summary: Adds the url_encode extension to postgres
+summary: Adds the 'url_encode' extension to postgres ${pg.version}
 description: RPM wrapper for the postgres url_encode extension (https://github.com/okbob/url_encode)
-version: $(cd url_encode; git tag | tail -1 | sed 's/^v//')
+version: $(cd ${{srcdir}}; git tag | tail -1 | sed 's/^v//')
+            # ^Oops, hardcoded FIXME: Have a dependency graph and use some standard algorithm
+
+include:
+  - ./qrpm.includes
 
 requires:
   - $pg_name-server
   - $pg_name-libs
 
-pg_name: $(rpm -q -qf '%{NAME}\n' -f $(readlink -f $(which pg_config)))
-pg_version: $(pg_config --version | sed 's/^[^0-9]* \([0-9]\+\).*$/\1/')
-pg_libdir: $(pg_config --libdir)
-pg_extdir: $(pg_config --share)/extension
+a: $b
+b: $c
+c: $a
+# Idea
+#submod: url_encode
+#subdir: url_encode
+#patches:
+# - patch/patch1.patch
+srcdir: url_encode
 
-init:
-  - git submodule init
-  - git submodule update
+root: ""
+
+pg:
+  name: $(rpm -q --qf '%{NAME}\n' -f $(readlink -f $(which pg_config)))
+  version: $(pg_config --version | sed 's/^[^0-9]* \([0-9]\+\).*$/\1/')
+  major: $version
+  libdir: $(pg_config --libdir)
+  sharedir: $(pg_config --sharedir)
+
+#init: # FIXME Doesn't work atm
+# - git submodule init
+# - git submodule update
 
 make:
-  - cd url_encode; make
+  - cd $srcdir; make
 
-$pg_libdir:
-  - url_encode/src/url_encode.so
+${pg.sharedir}/extension:
+  - $srcdir/url_encode.control
+  - $srcdir/sql/url_encode--1.2.sql
 
-$pg_extdir:
-  - url_encode/url_encode.control
-  - url_encode/sql/url_encode--1.2.sql
+${pg.libdir}:
+  - $srcdir/src/url_encode.so
+  - $srcdir/postgresql$version
+
+$root/somedir:
+  - $srcdir/somefile
 

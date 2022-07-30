@@ -1,4 +1,3 @@
-
 Name: <%= name %>
 Summary: <%= summary %>
 Version: <%= version %>
@@ -6,13 +5,12 @@ Release: <%= release %>
 License: <%= license %>
 Packager: <%= packager %>
 <% if group -%>
-Group: <%= group %>
+  Group: <%= group %>
 <% end -%>
-<% for pck in requires || [] -%>
-Requires: <%= pck %>
+<% for pck in require || [] -%>
+  Requires: <%= pck %>
 <% end -%>
 Source: %{name}.tar.gz
-BuildRoot: <%= rootdir %>/tmp/%{name}-%{version}
 
 %description
 <%= description %>
@@ -21,55 +19,56 @@ BuildRoot: <%= rootdir %>/tmp/%{name}-%{version}
 %setup -n <%= name %>
 
 %build
+cd <%= srcdir %>
 <% if make.nil? -%>
-<% if has_configure? -%>
-./configure
-<% end -%>
-<% if has_make? -%>
-make
-<% end -%>
+  <% if has_configure? -%>
+    ./configure
+  <% end -%>
+  <% if has_make? -%>
+    make
+  <% end -%>
 <% elsif make == false -%>
 <% elsif make == true -%>
-<% if has_configure? -%>
-./configure
-<% end -%>
-make
+  <% if has_configure? -%>
+    ./configure
+  <% end -%>
+  make
 <% elsif make.is_a? Array -%>
-<% for cmd in make -%>
-<%= cmd %>
-<% end -%>
+  <% for cmd in make -%>
+    <%= cmd.value  %>
+  <% end -%>
 <% end -%>
 
 %install
 <% if !nodes.empty? -%>
 mkdir -p <%= nodes.map { |f| "%{buildroot}#{f.directory}" }.uniq.join(" ") %>
 <% for file in files -%>
-cp <%= file.file %> %{buildroot}<%= file.path %>
+cp <%= file.srcpath %> %{buildroot}<%= file.dstpath %>
 <% end -%>
 <% for link in links -%>
-touch %{buildroot}<%= link.path %>
+touch %{buildroot}<%= link.dstpath %>
 <% end -%>
 <% end -%>
 
 %files
 <% for file in files -%>
-<%= file.path %>
+<%= file.dstpath %>
 <% end -%>
 <% for link in links -%>
-%ghost <%= link.path %>
+%ghost <%= link.dstpath %>
 <% end -%>
 
 %clean
-%if "%{clean}" != ""
-  rm -rf %{_topdir}/BUILD/%{name}
-  [ $(basename %{buildroot}) == "%{name}-%{version}-%{release}.%{_target_cpu}" ] && rm -rf %{buildroot}
-%endif
+true # no-op
 
 %post
 <% for file in files.select(&:perm) -%>
-chmod <%= file.perm %> <%= file.path %>
+chmod <%= file.perm %> <%= file.dstpath %>
 <% end -%>
-<% for file in links -%>
-ln -sf <%= link.link %> <%= link.path %>
+<% for file in reflinks -%>
+ln -sf <%= link.reflink %> <%= link.dstpath %>
+<% end -%>
+<% for file in symlinks -%>
+ln -sf <%= link.symlink %> <%= link.dstpath %>
 <% end -%>
 
