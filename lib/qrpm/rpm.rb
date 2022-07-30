@@ -52,6 +52,8 @@ module Qrpm
                 v.value
               when ArrayNode
                 v.values.map(&:value)
+              when NilClass
+                nil
               else
                 raise ArgumentError, "Can this even happen?"
             end
