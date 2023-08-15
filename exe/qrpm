@@ -160,8 +160,8 @@ begin
   Dir.chdir(qrpmdir)
 
   # Parse QRPM configuration file. Include paths are still resolved with the
-  # context of the original directory while filesystem paths are relative to
-  # the source directory
+  # context of the original directory if -C is used while filesystem paths are
+  # relative to the source directory
   compiler = Qrpm::Compiler.new(overrides)
   qrpm = compiler.compile(conf)
   rpm = qrpm.rpm
