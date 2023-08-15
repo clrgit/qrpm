@@ -126,6 +126,10 @@ begin
   currdir = overrides["currdir"] = File.expand_path(overrides["currdir"] || Dir.getwd)
   qrpmdir = overrides["qrpmdir"] = File.expand_path(overrides["qrpmdir"] || opts.directory || ".")
 
+  # Check builddir (todo: also currdir?)
+  File.directory?(currdir) or error "Can't find '#{currdir}'"
+  File.directory?(qrpmdir) or error "Can't find '#{qrpmdir}'"
+
   # Compute builddir
   if opts.builddir? && opts.force_builddir? 
     ShellOpts.error "Can't use both --builddir and --force-builddir"
@@ -139,7 +143,7 @@ begin
   end
 
   # Check if repository is clean
-  opts.force? || opts.dump? || `git status --porcelain | grep -v '??' 2>/dev/null` == "" or 
+  opts.force? || opts.dump? || `cd #{qrpmdir}; git status --porcelain | grep -v '??' 2>/dev/null` == "" or 
       ShellOpts.error "Repository is dirty"
 
   # Check configuration file

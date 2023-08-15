@@ -102,7 +102,7 @@ module Qrpm
   DEFAULTS = {
     "name" => "$(basename $PWD)",
     "summary" => "The $name RPM package",
-    "version" => "$(cd ${{srcdir}} && git tag -l 2>/dev/null | tail -1 | tr -dc '.0-9' || echo 0.0.0)",
+    "version" => "$(cd ${{srcdir}} && git tag -l 2>/dev/null | sort -V | tail -1 | tr -dc '.0-9' || echo 0.0.0)",
     "description" => "$summary",
     "release" => "1",
     "license" => "GPL",
