@@ -55,6 +55,49 @@ begin
 
     BUILT-IN VARIABLES
 
+    There are the following built-in variables. They are listed below with their 
+    default values:
+
+      rootdir         /
+      rootconfdir     /etc
+      rootexecdir     /usr
+      rootlibdir      /usr
+      rootconstdir    /usr/share
+      rootdocdir      /usr/share
+      rootdatadir     /var
+
+      sysetcdir       /etc
+      sysbindir       /usr/bin
+      syssbindir      /usr/sbin
+      syslibdir       /usr/lib64
+      syslibexecdir   /usr/libexec
+      syssharedir     /usr/share
+      sysdocdir       /usr/share/doc
+      sysvardir       /var/lib
+      sysspooldir     /var/spool
+      sysrundir       /var/run
+      syslockdir      /var/lock
+      syscachedir     /var/cache
+      syslogdir       /var/log
+      systmpdir       /tmp
+
+      pcketcdir       /etc/NAME
+      pckbindir       /usr/bin
+      pcksbindir      /usr/sbin
+      pcklibdir       /usr/lib64/NAME
+      pcklibexecdir   /usr/libexec/NAME
+      pcksharedir     /usr/share/NAME
+      pckdocdir       /usr/share/doc/NAME
+      pckvardir       /var/NAME
+      pckspooldir     /var/spool/NAME
+      pckrundir       /var/run/NAME
+      pcklockdir      /var/lock/NAME
+      pckcachedir     /var/cache/NAME
+      pcklogdir       /var/log/NAME
+      pcktmpdir       /tmp/NAME
+
+    Note that there are no package specific directories for bin and sbin
+
     INSTALLATION DIRECTORIES
 
     OPTIONS
@@ -131,7 +174,7 @@ begin
   File.directory?(qrpmdir) or error "Can't find '#{qrpmdir}'"
 
   # Compute builddir
-  if opts.builddir? && opts.force_builddir? 
+  if opts.builddir? && opts.force_builddir?
     ShellOpts.error "Can't use both --builddir and --force-builddir"
   elsif opts.builddir? || opts.force_builddir? 
     builddir = opts.builddir || opts.force_builddir || "builddir"
