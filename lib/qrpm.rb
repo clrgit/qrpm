@@ -68,8 +68,8 @@ module Qrpm
     syssbindir: "$rootexecdir/sbin",
     syslibdir: "$rootlibdir/lib64",
     syslibexecdir: "$rootexecdir/libexec",
-    syssharedir: "$rootconstdir/$pckdir", # Always a subdir of /usr/share
-    sysdocdir: "$syssharedir",
+    syssharedir: "$rootconstdir",
+    sysdocdir: "$syssharedir/doc",
     sysvardir: "$rootdatadir/lib",
     sysspooldir: "$rootdatadir/spool",
     sysrundir: "$rootdatadir/run",
@@ -79,11 +79,10 @@ module Qrpm
     systmpdir: "/tmp" # Always /tmp because of security
   }
 
-  # There are no package-specific versions of bindir and sbindir
   PACKAGE_DIRS = {
     pcketcdir: "$sysetcdir/$pckdir",
-    pckbindir: "$sysbindir", # No subdir
-    pcksbindir: "$syssbindir", # No subdir
+    pckbindir: "$sysbindir", # No package-specific directory
+    pcksbindir: "$syssbindir", # No package-specific directory
     pcklibdir: "$syslibdir/$pckdir",
     pcklibexecdir: "$syslibexecdir/$pckdir",
     pcksharedir: "$syssharedir/$pckdir",
