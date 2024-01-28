@@ -138,6 +138,11 @@ begin
 
     -d,dump
       Dump internal data and exit. For debug
+
+    COMMANDS
+      show! -- QRPM-FILE VARIABLE...
+        Output the value of a variable. Typically used to extract the version
+        number from a qrpm.yml file
   )
 
   opts, args = ShellOpts.process(SPEC, ARGV, verbose: true, quiet: true)
@@ -154,11 +159,14 @@ begin
   # on the command line
   overrides = {}
   file = nil
+  show = []
   while arg = args.extract(0..1)
     if arg =~ /^(.*?)=(.*)$/
       overrides[$1] = $2
     elsif file.nil?
       file = arg
+    elsif opts.subcommand == :show!
+      show << arg
     else
       args.expect(-1, "More than one file argument")
     end
@@ -208,6 +216,13 @@ begin
   compiler = Qrpm::Compiler.new(overrides)
   qrpm = compiler.compile(conf)
   rpm = qrpm.rpm
+
+  if opts.subcommand == :show!
+    for variable in show
+      puts qrpm[variable].sub(/^\/\//, "/")
+    end
+    exit
+  end
 
   if opts.dump?
     puts "Compiler"
