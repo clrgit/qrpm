@@ -64,7 +64,7 @@ module Qrpm
 
       # Compile and add dictionary to the AST. This allows command line
       # assignments to override spec file values
-      dict.each { |k,v| [k, ValueNode.new(ast, k.to_s, Fragment::Fragment.parse(v))] }
+      dict.each { |k,v| ValueNode.new(ast, k.to_s, Fragment::Fragment.parse(v)) }
 
       # Add defaults
       DEFAULTS.each { |k,v|
