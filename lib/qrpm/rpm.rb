@@ -80,7 +80,7 @@ module Qrpm
 
     def initialize(srcdir, fields, nodes, template: QRPM_ERB_FILE)
       constrain srcdir, String
-      constrain fields, String => Node
+      constrain fields, { String => Node }
       constrain nodes, [FileNode]
       @fields, @nodes = fields, nodes
       @srcdir = srcdir
