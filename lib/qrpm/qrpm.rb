@@ -23,7 +23,7 @@ module Qrpm
     def srcdir() @dict["srcdir"] end
 
     def initialize(defs, deps)
-      constrain defs, String => Node
+      constrain defs, { String => Node }
       @defs, @deps = defs, deps
       @vars, @dirs, @files = {}, {}, {}
       @defs.values.map(&:traverse).flatten.each { |object|

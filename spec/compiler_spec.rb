@@ -121,6 +121,21 @@ describe "Qrpm" do
         end
       end
     end
+
+    describe "#compile" do
+      it "returns a Qrpm object" do
+        c = Qrpm::Compiler.new({}, system_dirs: true, defaults: true, srcdir: false)
+        source = {
+          "name" => "Rspec test",
+          "version" => "0.0.0",
+          "summary" => "Rspec test",
+          "$bindir" => %w(a)
+        }
+        result = c.compile(source)
+        expect(result).to be_a Qrpm::Qrpm
+      end
+    end
+
   end
 end
 
