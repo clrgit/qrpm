@@ -25,9 +25,9 @@ Gem::Specification.new do |spec|
   spec.executables   = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
-  spec.add_dependency "shellopts", "~> 2.1.1"
+  spec.add_dependency "shellopts"
   spec.add_dependency "indented_io"
-  spec.add_dependency "constrain", "= 0.5.1"
+  spec.add_dependency "constrain"
   spec.add_dependency "forward_to"
 
   # Uncomment to register a new dependency of your gem
