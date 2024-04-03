@@ -130,7 +130,12 @@ module Qrpm
           IO.write(destfiles.first, @spec)
         else
           IO.write(spec_path, @spec)
-          system "rpmbuild -v -ba --define \"_topdir #{rootdir}\" #{rootdir}/SPECS/#{name}.spec #{verb}" or
+          rpm_build_options = [
+              "-v -ba",
+              "-D 'debug_package %{nil}'",
+              "--define \"_topdir #{rootdir}\"",
+          ].join(" ")
+          system "rpmbuild #{rpm_build_options} #{rootdir}/SPECS/#{name}.spec #{verb}" or
               raise "Failed building RPM file. Re-run with -v option to see errors"
           if target == :srpm
             destfiles = Dir["#{rootdir}/SRPMS/*"]
