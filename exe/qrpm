@@ -197,18 +197,18 @@ begin
   opts.force? || opts.dump? || `cd #{qrpmdir}; git status --porcelain | grep -v '??' 2>/dev/null` == "" or 
       ShellOpts.error "Repository is dirty"
 
+  # Create lexer
+  lexer = Qrpm::Lexer.new([currdir, qrpmdir].uniq, opts.include.reverse)
+
+  # Change to qrpm directory
+  Dir.chdir(qrpmdir)
+
   # Check configuration file
   file ||= Qrpm::QRPM_CONFIG_FILE
   ::File.exist?(file) or ShellOpts.error "Can't find '#{file}'"
 
-  # Create lexer
-  lexer = Qrpm::Lexer.new([currdir, qrpmdir].uniq, opts.include.reverse)
-
   # Load the qrpm configuration file
   conf = lexer.lex(File.expand_path file)
-
-  # Change to qrpm directory
-  Dir.chdir(qrpmdir)
 
   # Parse QRPM configuration file. Include paths are still resolved with the
   # context of the original directory if -C is used while filesystem paths are
