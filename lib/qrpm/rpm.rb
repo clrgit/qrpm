@@ -9,19 +9,16 @@ module Qrpm
   #   release     Release
   #   summary     Short one-line description of package (mandatory)
   #   description Description
-  #   packager    Name of the packager (defaults to the name of the user or 
+  #   packager    Name of the packager (defaults to the name of the user or
   #               $USER@$HOSTNAME if not found)
   #   license     License (defaults to GPL)
   #   require     Array of required packages
   #   make        Controls the build process:
-  #                 null    Search the top-level directory for configure or
-  #                         make files and runs them. Skip building if not 
-  #                         found. This is the default
-  #                 true    Expect the top-level directory to contain 
-  #                         configure or make files and runs them. It is an 
+  #                 true    Expect the top-level directory to contain
+  #                         configure or make files and runs them. It is an
   #                         error if the Makefile is missing
-  #                 (array of commands)
-  #                         Runs the commands to build the project
+  #                 (possibly multiline command)
+  #                         Runs the command to build the project
   #
   # Each field has a dynamically generated accessor method that can be
   # referenced in the template file
@@ -37,16 +34,16 @@ module Qrpm
       "group" => [String],
       "include" => [Array, String],
       "require" => [Array, String],
-      "make" => [Array, String]
+      "make" => [String]
     })
 
     RPM_DIRS = %w(SOURCES BUILD RPMS SPECS SRPMS tmp)
 
     # Field accessor methods. FIXME Value should have been resolved
-    FIELDS.each { |f,ts| 
+    FIELDS.each { |f,ts|
       if ts.include? Array
         eval <<-EOS
-          def #{f}() 
+          def #{f}()
             case v = @fields["#{f}"]
               when ValueNode
                 v.value
