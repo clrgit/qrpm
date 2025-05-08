@@ -15,28 +15,21 @@ Source: %{name}.tar.gz
 %description
 <%= description %>
 
+%global debug_package %{nil}
+
 %prep
 %setup -n <%= name %>
 
 %build
 cd <%= srcdir %>
-<% if make.nil? -%>
-  <% if has_configure? -%>
-    ./configure
-  <% end -%>
-  <% if has_make? -%>
-    make
-  <% end -%>
-<% elsif make == false -%>
-<% elsif make == true -%>
+<% if make.nil? || make == false -%>
+<% elsif make == true %>
   <% if has_configure? -%>
     ./configure
   <% end -%>
   make
-<% elsif make.is_a? Array -%>
-  <% for cmd in make -%>
-    <%= cmd  %>
-  <% end -%>
+<% elsif make.is_a? String -%>
+  <%= make %>
 <% end -%>
 
 %install

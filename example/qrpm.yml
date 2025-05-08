@@ -10,8 +10,8 @@ require:
   - httpd
   - postgresql13
 
-make: # List of commands to build project
-  - echo "Hej du" > bin/another_file
+make: |
+  echo "Hej du" > bin/another_file
 
 $bindir:
   - bin/a_file

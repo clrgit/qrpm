@@ -68,8 +68,8 @@ pg:
 # - git submodule init
 # - git submodule update
 
-make:
-  - cd $srcdir; make
+make: |
+  cd $srcdir; make
 
 ${pg.sharedir}/extension:
   - $srcdir/url_encode.control

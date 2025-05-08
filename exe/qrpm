@@ -34,7 +34,15 @@ begin
     is set to the name of the current directory and version to the latest tag
     in git (which needs to be present). Other defaults are detailed below
 
-    VARIABLES 
+    SETUP
+
+      Use qrpm -t to generate a template qrpm.yml file:
+
+        qrpm -t [TEMPLATE-FILE]
+
+      Then customize as needed
+
+    VARIABLES
 
     The configuration file can define and use variables. They are defined by
     key/value definitions and the value can refer to values of other
@@ -46,6 +54,21 @@ begin
     part of the command so only one command is allowed. This restriction keeps
     the parser simple, it may change in the future
 
+    The special 'make' variable takes a string and executes it before packaing
+    the project
+
+    STANDARD VARIABLES
+
+    The following RPM variables are recognized:
+
+      name
+      summary
+      description
+      version
+      release
+      packager
+      requires
+
     INCLUDE FILES
 
     The qrpm file can include other files that are searched for in a list of
@@ -55,7 +78,7 @@ begin
 
     BUILT-IN VARIABLES
 
-    There are the following built-in variables. They are listed below with their 
+    There are the following built-in variables. They are listed below with their
     default values:
 
       rootdir         /
@@ -104,7 +127,7 @@ begin
 
     -f,force
       Create package even if repository is dirty. Normally qrpm checks if the
-      current directory is clean
+      current (git) directory is clean
 
     -C,directory=EDIR
       Change to directory before doing anything else but include the current
@@ -184,9 +207,9 @@ begin
   # Compute builddir
   if opts.builddir? && opts.force_builddir?
     ShellOpts.error "Can't use both --builddir and --force-builddir"
-  elsif opts.builddir? || opts.force_builddir? 
+  elsif opts.builddir? || opts.force_builddir?
     builddir = opts.builddir || opts.force_builddir || "builddir"
-    opts.force_builddir? || !File.exist?(builddir) or 
+    opts.force_builddir? || !File.exist?(builddir) or
         ShellOpts.error "Build directory 'builddir' exists - use -B to override"
     builddir = File.expand_path(builddir)
   else
@@ -194,7 +217,7 @@ begin
   end
 
   # Check if repository is clean
-  opts.force? || opts.dump? || `cd #{qrpmdir}; git status --porcelain | grep -v '??' 2>/dev/null` == "" or 
+  opts.force? || opts.dump? || `cd #{qrpmdir}; git status --porcelain | grep -v '??' 2>/dev/null` == "" or
       ShellOpts.error "Repository is dirty"
 
   # Create lexer
@@ -240,10 +263,10 @@ begin
   # Create spec/srpm/rpm file
   target = (opts.spec? ? :spec : (opts.source? ? :srpm : :rpm))
   files = rpm.build(
-      target: target, 
-      file: opts.spec, 
-      verbose: opts.verbose?, 
-      destdir: currdir, 
+      target: target,
+      file: opts.spec,
+      verbose: opts.verbose?,
+      destdir: currdir,
       builddir: builddir)
 
   puts "Built #{files.map { |f| File.basename(f) }.join(" ")}" if !opts.quiet?

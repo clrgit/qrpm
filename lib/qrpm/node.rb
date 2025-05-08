@@ -47,9 +47,9 @@ module Qrpm
     # Interpolate variables in Node. Note that interpolation is not recursive
     # except for DirectoryNode objects that interpolates both key and elements.
     # #interpolate sets the interpolated flag and returns self
-    def interpolate(dict) 
+    def interpolate(dict)
       @interpolated = true
-      self 
+      self
     end
 
     # True if object has been interpolated
@@ -116,7 +116,7 @@ module Qrpm
 
   class ValueNode < Node
     # Source code of expression
-    def source() @expr.source end 
+    def source() @expr.source end
 
     # Override Qrpm#value. Initially nil, initialized by #interpolate
     attr_reader :value
@@ -129,10 +129,10 @@ module Qrpm
 
     # Override Qrpm methods
     def variables() @variables ||= expr.variables end
-    
-    def interpolate(dict) 
+
+    def interpolate(dict)
       @value ||= expr.interpolate(dict) # Allows StandardDirNode to do its own assignment
-      super 
+      super
     end
 
     def signature() "#{class_name}(#{name},#{expr.source})" end
@@ -185,7 +185,7 @@ module Qrpm
     # Override ContainerNode#exprs
     def exprs() expr.values end
 
-    def initialize(parent, name, hash = {}) 
+    def initialize(parent, name, hash = {})
       constrain hash, Hash
       super(parent, name, hash.dup)
     end
@@ -195,7 +195,7 @@ module Qrpm
     def dump
       puts "{"
       indent {
-        expr.each { |k,v| 
+        expr.each { |k,v|
           print "#{k}: "
           v.dump
         }
@@ -213,8 +213,8 @@ module Qrpm
 
     # Override Node#interpolate. Only interpolates contained DirectoryNode
     # objects (TODO doubtfull - this is a Qrpm-level problem not a Node problem)
-    def interpolate(dict) 
-      exprs.each { |e| e.is_a?(DirectoryNode) and e.interpolate(dict) } 
+    def interpolate(dict)
+      exprs.each { |e| e.is_a?(DirectoryNode) and e.interpolate(dict) }
       super
     end
 
@@ -241,7 +241,7 @@ module Qrpm
   # Exactly one of 'file', 'symlink', and 'reflink' must be defined. 'perm'
   # can't be used together with 'symlink' or 'reflink'
   #
-  # When interpolated the following methods are defined on a FileNode: 
+  # When interpolated the following methods are defined on a FileNode:
   #
   #   srcpath     Path to source file
   #   dstpath     Path to destination file
@@ -288,7 +288,7 @@ module Qrpm
 
     def interpolate(dict)
       super
-      exprs.each { |e| e.interpolate(dict) } 
+      exprs.each { |e| e.interpolate(dict) }
       @srcpath = value[%w(file symlink reflink).find { |k| expr.key?(k) }].value
       @dstname = value["name"]&.value || File.basename(srcpath)
       @dstpath = "#{parent.directory}/#{@dstname}"
@@ -337,7 +337,7 @@ module Qrpm
     # Override ContainerNode#exprs
     def exprs() expr end
 
-    def initialize(parent, name, array = []) 
+    def initialize(parent, name, array = [])
       constrain array, Array
       super(parent, name, array.dup)
     end
@@ -371,7 +371,7 @@ module Qrpm
   class DirectoryNode < ArrayNode
     # Override Qrpm#key
     attr_reader :key
-    
+
     # File system path to the directory. An alias for uuid/key
     def directory() key end
 
@@ -387,7 +387,7 @@ module Qrpm
     def interpolate(dict)
       # #key is used by the embedded files to compute their paths so it has be
       # interpolated before we interpolate the files through the +super+ method
-      @key = name.interpolate(dict) 
+      @key = name.interpolate(dict)
       super
     end
   end
