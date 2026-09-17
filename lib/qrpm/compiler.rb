@@ -188,6 +188,21 @@ module Qrpm
       # Normalize perm (YAML parses a literal 0644 as the integer 420!)
       hash["perm"] = sprintf "%04o", hash["perm"] if hash["perm"].is_a?(Integer)
 
+      # Translate symbolic chmod(1) modes to octal because %attr in the spec
+      # file only accepts octal modes. Variables are left as they are
+      case hash["perm"]
+        when nil, /\A[0-7]{3,4}\z/, /\$/
+          # ok
+        when /\A[ugoa+=,rwxst-]+\z/
+          begin
+            hash["perm"] = ::Qrpm.chmod_to_octal(hash["perm"])
+          rescue ArgumentError => ex
+            error "Illegal permissions '#{hash["perm"]}': #{ex.message}"
+          end
+      else
+        error "Illegal permissions '#{hash["perm"]}'"
+      end
+
       # Update file with srcdir
       hash["file"] &&= "$srcdir/#{hash["file"]}" if @use_srcdir
 

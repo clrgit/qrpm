@@ -45,8 +45,9 @@ make: null      # make can be undefined or null (use make if present), false
 #   file: Path to source file
 #   symlink: Path on the target system to the source of a symbolic link
 #   reflink: Path on the target system to the source of a hard link
-#   perm: Octal permissions. Defaults are the source file's permissions.
-#         Can't be used together with :symlink or :reflink
+#   perm: Permissions in octal or symbolic chmod(1) notation, eg. 0640 or
+#         u=rw,g=r,o=. Defaults are the source file's permissions. Can't be
+#         used together with :symlink or :reflink
 #
 # It is used like this
 #   

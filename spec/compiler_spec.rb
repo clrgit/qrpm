@@ -38,6 +38,32 @@ describe "Qrpm" do
       end
     end
 
+    describe "#parse of files" do
+      def parse(h) Qrpm::Compiler.new({}, system_dirs: false, defaults: false, srcdir: false).parse(h) end
+      def file(attrs) parse("dir" => [attrs]).values.first.values.first end
+
+      it "accepts octal permissions" do
+        expect(file("file" => "f", "perm" => "0644").expr["perm"].source).to eq "0644"
+        expect(file("file" => "f", "perm" => 0644).expr["perm"].source).to eq "0644"
+        expect(file("file" => "f", "perm" => "$perm").expr["perm"].source).to eq "$perm"
+      end
+      it "translates symbolic permissions to octal" do
+        expect(file("file" => "f", "perm" => "u=rwx,go=rx").expr["perm"].source).to eq "0755"
+        expect(file("file" => "f", "perm" => "u=rw,go=").expr["perm"].source).to eq "0600"
+      end
+      it "rejects relative and illegal permissions" do
+        expect { file("file" => "f", "perm" => "a-x") }.to raise_error(Qrpm::CompileError, /Illegal permissions/)
+        expect { file("file" => "f", "perm" => "rwx") }.to raise_error(Qrpm::CompileError, /Illegal permissions/)
+        expect { file("file" => "f", "perm" => "12") }.to raise_error(Qrpm::CompileError, /Illegal permissions/)
+      end
+      it "rejects perm together with links" do
+        expect { file("symlink" => "f", "perm" => "0644") }.to raise_error(Qrpm::CompileError)
+      end
+      it "rejects unknown attributes" do
+        expect { file("file" => "f", "owner" => "root") }.to raise_error(Qrpm::CompileError, /owner/)
+      end
+    end
+
     describe "#analyze" do
       def options = { 
         check_undefined: false, 

@@ -44,6 +44,30 @@ describe "Qrpm" do
     end
   end
 
+  describe "::chmod_to_octal" do
+    def octal(mode) Qrpm.chmod_to_octal(mode) end
+
+    it "translates absolute modes" do
+      expect(octal("u=rwx,go=rx")).to eq "0755"
+      expect(octal("u=rw,g=r,o=")).to eq "0640"
+      expect(octal("a=r")).to eq "0444"
+      expect(octal("=rwx")).to eq "0777"
+    end
+    it "translates '+' relative to an initial mode of 0" do
+      expect(octal("u+rwx,go+rx")).to eq "0755"
+      expect(octal("+x")).to eq "0111"
+    end
+    it "handles setuid, setgid, and sticky bits" do
+      expect(octal("u+s,a=rx")).to eq "4555"
+      expect(octal("g+s,a=rx")).to eq "2555"
+      expect(octal("a=rwx,+t")).to eq "1777"
+    end
+    it "rejects '-' and 'X'" do
+      expect { octal("a-x") }.to raise_error(ArgumentError)
+      expect { octal("u=rwX") }.to raise_error(ArgumentError)
+    end
+  end
+
   describe "::file_version" do
     def scan(content)
       Dir.mktmpdir { |dir|

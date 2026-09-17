@@ -235,8 +235,9 @@ module Qrpm
   #               (hard-link). May be nil
   #   symlink     Path on the target filesystem to the source of the symlink.
   #               May be nil
-  #   perm        Permissions of the target file in chmod(1) octal or rwx
-  #               notation. May be nil
+  #   perm        Permissions of the target file in octal notation. Symbolic
+  #               chmod(1) modes are translated to octal by the compiler. May
+  #               be nil
   #
   # Exactly one of 'file', 'symlink', and 'reflink' must be defined. 'perm'
   # can't be used together with 'symlink' or 'reflink'

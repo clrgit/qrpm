@@ -47,6 +47,32 @@ module Qrpm
     parse_version(m[0])&.first
   end
 
+  # Translate a chmod(1) symbolic mode like 'u=rwx,go=rx' to a four-digit
+  # octal string. The mode is computed from an initial mode of 0 so only '='
+  # and '+' operations are meaningful, '-' is an error. 'X' is not supported
+  # because it depends on the file. Raises ArgumentError on illegal modes
+  def self.chmod_to_octal(mode)
+    bits = { "r" => 4, "w" => 2, "x" => 1 }
+    result = 0
+    mode.split(",").each { |clause|
+      clause =~ /\A([ugoa]*)([-+=])([rwxst]*)\z/ or raise ArgumentError, "Illegal mode '#{clause}'"
+      who, op, perms = $1, $2, $3
+      op != "-" or raise ArgumentError, "Can't use '-' in '#{clause}', the initial mode is 0"
+      who = "a" if who.empty?
+      who = "ugo" if who.include?("a")
+      who.each_char { |w|
+        shift = { "u" => 6, "g" => 3, "o" => 0 }[w]
+        mask = 7 << shift
+        value = perms.each_char.sum { |p| bits[p] || 0 } << shift
+        result = op == "=" ? (result & ~mask) | value : result | value
+        result |= 04000 if w == "u" && perms.include?("s")
+        result |= 02000 if w == "g" && perms.include?("s")
+      }
+      result |= 01000 if perms.include?("t")
+    }
+    sprintf "%04o", result
+  end
+
   # Search the git history of +dir+ for a version. The highest version among
   # the tags reachable from HEAD wins. If there is none, the name of the
   # current branch is used if it looks like a version. Returns nil if no
