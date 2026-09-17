@@ -87,6 +87,14 @@ module Qrpm
     def has_configure?() ::File.exist? "#{srcdir}/configure" end
     def has_make?() ::File.exist? "#{srcdir}/Makefile" end
 
+    # Render the SPEC file from the template and return it as a String. The
+    # result is also assigned to #spec. Initial blanks are removed from each
+    # line in the file
+    def render
+      renderer = ERB.new(IO.read(@template).sub(/^__END__\n.*/m, ""), trim_mode: "-")
+      @spec = renderer.result(binding).gsub(/^[[:blank:]]*/, "")
+    end
+
     def build(target: :rpm, file: nil, verbose: false, destdir: ".", builddir: nil)
       verb = verbose ? "" : "&>/dev/null"
       begin
@@ -117,9 +125,8 @@ module Qrpm
         # files are in the git repo or not
         system "tar zcf #{tar_path} --transform=s%^\./%#{name}/% ." # FIXME FIXME
 
-        # Create spec file. Initial blanks are removed from each line in the file
-        renderer = ERB.new(IO.read(@template).sub(/^__END__\n.*/m, ""), trim_mode: "-")
-        @spec = renderer.result(binding).gsub(/^[[:blank:]]*/, "")
+        # Create spec file
+        render
 
         # Emit spec or build RPM
         if target == :spec

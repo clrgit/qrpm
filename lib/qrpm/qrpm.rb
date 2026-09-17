@@ -45,8 +45,10 @@ module Qrpm
       @evaluated ||= begin
         unresolved = @defs.dup # Queue of unresolved definitions
 
-        # Find objects. Built-in RPM fields and directories are evaluated recursively
-        paths = FIELDS.keys.select { |k| @defs.key? k } + dirs.keys #+ DEFAULTS.keys
+        # Find objects. Built-in RPM fields and directories are evaluated
+        # recursively. $srcdir is always evaluated because Rpm needs it even
+        # when there are no directories that depend on it
+        paths = (FIELDS.keys + ["srcdir"]).select { |k| @defs.key? k } + dirs.keys #+ DEFAULTS.keys
 
         # Find dependency order of objects
         ordered_deps = find_evaluation_order(paths)
