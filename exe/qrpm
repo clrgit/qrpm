@@ -255,9 +255,8 @@ begin
     builddir = nil
   end
 
-  # Check if repository is clean
-  opts.force? || opts.dump? || `cd #{qrpmdir}; git status --porcelain | grep -v '??' 2>/dev/null` == "" or
-      ShellOpts.error "Repository is dirty"
+  # Check if repository is clean. Only changes below the qrpm directory count
+  opts.force? || opts.dump? || !Qrpm.dirty?(qrpmdir) or ShellOpts.error "Repository is dirty"
 
   # Create lexer
   lexer = Qrpm::Lexer.new([currdir, qrpmdir].uniq, opts.include.reverse)
