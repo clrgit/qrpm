@@ -51,7 +51,8 @@ module Qrpm
     private
       # Parse string and return an array of Fragment sources. The string is
       # scanned for $NAME, ${NAME}, $(COMMAND), and ${{NAME}} inside $(COMMAND)
-      # interpolations
+      # interpolations. Multi-line strings are parsed line by line so that
+      # a $(COMMAND) never extends beyond the end of the line
       #
       # The string is parsed into Fragments to be able to interpolate it
       # without re-parsing
@@ -61,6 +62,19 @@ module Qrpm
       # variables without quotes. Eg '/home/$pck.home/dir' will be parsed as
       # '/home/${pck.home}/dir'
       def Fragment.parse_string(string)
+        res = []
+        string.split(/(?<=\n)/).each { |line|
+          res.concat parse_line(line.chomp)
+          if line.end_with?("\n")
+            text = res.last.is_a?(TextFragment) ? res.pop.source : ""
+            res << TextFragment.new(text + "\n")
+          end
+        }
+        res
+      end
+
+      # Parse a single line. Used by #parse_string
+      def Fragment.parse_line(string)
         res = []
         string.scan(/(.*?)(\\*)(\$#{PATH_RE}|\$\{#{PATH_RE}\}|\$\(.+\)|$)/)[0..-2].each { 
             |prefix, backslashes, expr|

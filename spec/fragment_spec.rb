@@ -68,6 +68,10 @@ describe "Qrpm" do
 
     describe "#interpolate" do
       def dict() { "a" => "word" } end
+      it "keeps newlines in multi-line strings" do
+        e = Qrpm::Fragment::Fragment.parse("a $x\nb\n")
+        expect(e.interpolate("x" => "X")).to eq "a X\nb\n"
+      end
       it "replaces $NAME variables" do
         e = parse("Hello $a world")
         expect(e.interpolate(dict)).to eq "Hello word world"
