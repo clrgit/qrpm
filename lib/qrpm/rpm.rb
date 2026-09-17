@@ -16,17 +16,21 @@ module Qrpm
   #               $USER@$HOSTNAME if not found)
   #   license     License (defaults to GPL)
   #   require     Array of required packages
-  #   make        Controls the build process:
-  #                 true    Expect the top-level directory to contain
-  #                         configure or make files and runs them. It is an
-  #                         error if the Makefile is missing
-  #                 (possibly multiline command)
-  #                         Runs the command to build the project
+  #   make        Shell script that builds the project on the build host
+  #   pre         Shell script run on the installation host before install
+  #   post        Shell script run on the installation host after install
+  #   pre_uninstall
+  #               Shell script run on the installation host before uninstall
+  #   post_uninstall
+  #               Shell script run on the installation host after uninstall
+  #
+  # The shell scripts are routines, see Fragment::RoutineFragment
   #
   # Each field has a dynamically generated accessor method that can be
   # referenced in the template file
   class Rpm
     MANDATORY_FIELDS = %w(name version summary)
+    ROUTINES = %w(make pre post pre_uninstall post_uninstall)
 
     # Maps from field name to array of allowed types for that field
     FIELDS = MANDATORY_FIELDS.map { |f| [f, [String]] }.to_h.merge({
@@ -37,7 +41,11 @@ module Qrpm
       "license" => [String],
       "include" => [Array, String],
       "require" => [Array, String],
-      "make" => [String]
+      "make" => [String],
+      "pre" => [String],
+      "post" => [String],
+      "pre_uninstall" => [String],
+      "post_uninstall" => [String]
     })
 
     RPM_DIRS = %w(SOURCES BUILD RPMS SPECS SRPMS tmp)
@@ -91,11 +99,10 @@ module Qrpm
     def has_make?() ::File.exist? "#{srcdir}/Makefile" end
 
     # Render the SPEC file from the template and return it as a String. The
-    # result is also assigned to #spec. Initial blanks are removed from each
-    # line in the file
+    # result is also assigned to #spec
     def render
       renderer = ERB.new(IO.read(@template).sub(/^__END__\n.*/m, ""), trim_mode: "-")
-      @spec = renderer.result(binding).gsub(/^[[:blank:]]*/, "")
+      @spec = renderer.result(binding)
     end
 
     def build(target: :rpm, file: nil, verbose: false, destdir: ".", builddir: nil)

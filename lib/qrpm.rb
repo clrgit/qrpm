@@ -118,8 +118,13 @@ module Qrpm
     "make" => nil
   }
 
-  IDENT_RE = /(?:[\w_][\w\d_]*)/
-  PATH_RE = /(?:[\w_][\w\d_.]*)/
+  # Variable names can't start with a digit so that positional parameters
+  # like $1 in routines are left to the shell
+  IDENT_RE = /(?:[a-zA-Z_]\w*)/
+  PATH_RE = /(?:[a-zA-Z_][\w.]*)/
+
+  # Fields that are shell scripts, see Fragment::RoutineFragment
+  ROUTINES = Rpm::ROUTINES
 
   FILE_KEYS = %w(name file symlink reflink perm)
 end

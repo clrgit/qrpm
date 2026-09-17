@@ -54,6 +54,8 @@ module Qrpm
         builtin_array = FIELDS[key]&.include?(ArrayNode) || false
         case [key.to_s, value, builtin_array]
           in [/[\/\$]/, _, _]; parse_directory_node(@ast, key, value)
+          in [String => k, String, _] if ROUTINES.include?(k)
+            ValueNode.new(@ast, k, Fragment::RoutineFragment.new(value))
           in [/^#{PATH_RE}$/, String, true]; parse_node(@ast, key, [value])
           in [/^#{PATH_RE}$/, Array, false]; parse_directory_node(@ast, key, value)
           in [/^#{PATH_RE}$/, _, _]; parse_node(@ast, key, value)
@@ -112,6 +114,15 @@ module Qrpm
 
       # Collect definitions and dependencies
       ast.values.each { |node| collect_variables(node) }
+
+      # Narrow the dependencies of routines to the qrpm variables they refer
+      # to. Other names are left to the shell
+      names = defs.select { |_, node| node.is_a?(ValueNode) }.keys
+      ast.values.each { |node|
+        next if !node.is_a?(ValueNode) || !node.expr.is_a?(Fragment::RoutineFragment)
+        node.expr.resolve(names)
+        @deps[node.path] = node.variables
+      }
 
       # Detect undefined variables and references to hashes or arrays
       if check_undefined

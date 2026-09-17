@@ -13,9 +13,15 @@ require:        # List of required packages
 
 # Build information
 #
-make: null      # make can be undefined or null (use make if present), false
-                # (don't use make), true (use make), or a list of shell
-                # commands to build the project
+make:           # Shell script that builds the project on the build host.
+                # Nothing is built if it is left out
+pre:            # Shell script run on the installation host before install
+post:           # Shell script run on the installation host after install
+pre_uninstall:  # Shell script run on the installation host before uninstall
+post_uninstall: # Shell script run on the installation host after uninstall
+#
+# Routines are not interpolated. The qrpm variables they refer to as $name are
+# defined as shell variables at the top of the script instead
 
 # Directories, files, and links
 #

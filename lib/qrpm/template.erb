@@ -5,7 +5,7 @@ Release: <%= release %>
 License: <%= license %>
 Packager: <%= packager %>
 <% for pck in require || [] -%>
-  Requires: <%= pck %>
+Requires: <%= pck %>
 <% end -%>
 Source: %{name}.tar.gz
 
@@ -19,14 +19,8 @@ Source: %{name}.tar.gz
 
 %build
 cd <%= srcdir %>
-<% if make.nil? || make == false -%>
-<% elsif make == true %>
-  <% if has_configure? -%>
-    ./configure
-  <% end -%>
-  make
-<% elsif make.is_a? String -%>
-  <%= make %>
+<% if make -%>
+<%= make %>
 <% end -%>
 
 %install
@@ -55,6 +49,11 @@ touch %{buildroot}<%= link.dstpath %>
 %clean
 true # no-op
 
+<% if pre -%>
+%pre
+<%= pre %>
+
+<% end -%>
 %post
 <% for link in reflinks -%>
 ln -sf <%= link.reflink %> <%= link.dstpath %>
@@ -62,4 +61,16 @@ ln -sf <%= link.reflink %> <%= link.dstpath %>
 <% for link in symlinks -%>
 ln -sf <%= link.symlink %> <%= link.dstpath %>
 <% end -%>
+<% if post -%>
+<%= post %>
+<% end -%>
+<% if pre_uninstall -%>
 
+%preun
+<%= pre_uninstall %>
+<% end -%>
+<% if post_uninstall -%>
+
+%postun
+<%= post_uninstall %>
+<% end -%>

@@ -1,6 +1,8 @@
 
 # TODO: Create (and use) a Fragment.parse method
 
+require 'shellwords'
+
 module Qrpm
   module Fragment
     # A part of a key or value in the QRPM configuration file
@@ -169,6 +171,35 @@ module Qrpm
         stdout, stderr, status = Open3.capture3(cmd)
         status == 0 or raise Error.new "Failed expanding '$(#{cmd})'\n#{stderr}"
         stdout.chomp
+      end
+    end
+
+    # A routine is a shell script that is run on the build host (make) or on
+    # the installation host (pre, post, ...). The script is not interpolated.
+    # Instead, the qrpm variables it refers to as $name or ${name} are
+    # defined as shell variables at the top of the script. Shell variables
+    # like $HOME, positional parameters like $1, and $(...) constructs are
+    # left to the shell
+    #
+    # #variables is initially the list of all names referenced in the script.
+    # Compiler#analyze narrows it to the names that are qrpm variables using
+    # #resolve
+    class RoutineFragment < Fragment
+      attr_reader :variables
+
+      def initialize(source)
+        super(source)
+        @variables = source.scan(/\$\{?(#{IDENT_RE})/).flatten.uniq
+      end
+
+      # Narrow #variables to the names in +names+
+      def resolve(names) @variables &= names end
+
+      # Return the script with the referenced qrpm variables defined at the
+      # top
+      def interpolate(dict)
+        defs = variables.map { |v| "#{v}=#{Shellwords.escape(dict[v].to_s)}" }
+        (defs + [source]).join("\n")
       end
     end
 

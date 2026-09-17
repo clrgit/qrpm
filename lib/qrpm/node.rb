@@ -127,8 +127,9 @@ module Qrpm
       super
     end
 
-    # Override Qrpm methods
-    def variables() @variables ||= expr.variables end
+    # Override Qrpm methods. Not memoized because routine fragments narrow
+    # their variables in Compiler#analyze
+    def variables() expr.variables end
 
     def interpolate(dict)
       @value ||= expr.interpolate(dict) # Allows StandardDirNode to do its own assignment
