@@ -346,7 +346,7 @@ begin
 
   puts "Built #{files.map { |f| File.basename(f) }.join(" ")}" if !opts.quiet?
 
-rescue RuntimeError => ex
+rescue RuntimeError, Qrpm::CompileError => ex
   ShellOpts.failure ex.message
 end
 
