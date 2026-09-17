@@ -8,7 +8,7 @@ description:    # Optional longer description
 version:        # Version
 release:        # Release. Optional
 packager:       # Packager, default $USER
-requires:       # List of required packages
+require:        # List of required packages
 
 # Build information
 #
@@ -39,9 +39,13 @@ make: null      # make can be undefined or null (use make if present), false
 #
 # Files can also be specified using the following attributes
 #
-#   name: Destination file name. Default is the last path component in :file
+#   name: Destination file name. Default is the last path component in
+#         :file, :symlink, or :reflink
 #   file: Path to source file
-#   perm: Octal permissions. Defaults are the source file's permissions
+#   symlink: Path on the target system to the source of a symbolic link
+#   reflink: Path on the target system to the source of a hard link
+#   perm: Octal permissions. Defaults are the source file's permissions.
+#         Can't be used together with :symlink or :reflink
 #
 # It is used like this
 #   
@@ -53,40 +57,41 @@ make: null      # make can be undefined or null (use make if present), false
 # This will copy src/my_data to a 'data' file in the /opt/my_files directory
 # with permissions 0600
 #
-# Link files are specified using the :link attribute that is a path on the
-# target system:
+# Exactly one of :file, :symlink, and :reflink must be defined. Links are
+# specified like this:
 #
 #   /opt/my_files:
 #     - name: linked_data
-#       link: /opt/my_files/data
+#       symlink: /opt/my_files/data
 #
-# Default name for link files is the basename of of :link
+# Default name for link files is the basename of :symlink or :reflink
 #
 #
-# The following standard directories are defined: FIXME Outdated
+# The following standard directories are defined:
 #
 #   etcdir            /etc            Configuration files
 #   bindir            /usr/bin        Executables
 #   sbindir           /usr/sbin       System executables
-#   libdir            /usr/lib        Libraries (both binary and clear text)
-#   libexecdir        /usr/libexec    Executable subprograms (not meant to be 
+#   libdir            /usr/lib64      Libraries (both binary and clear text)
+#   libexecdir        /usr/libexec    Executable subprograms (not meant to be
 #                                     called indepentently)
 #   sharedir          /usr/share      Constant data files
+#   docdir            /usr/share/doc  Documentation
 #   vardir            /var/lib        Variable data files
 #   spooldir          /var/spool      Spool files
 #   rundir            /var/run        Run files
 #   lockdir           /var/lock       Lock files
 #   cachedir          /var/cache      Cache directory
-#   tmpdir            /tmp            Temporary directory (deleted between restarts)
-#   vartmpdir         /var/tmp        TODO
 #   logdir            /var/log        Log directory
+#   tmpdir            /tmp            Temporary directory (deleted between restarts)
 #
-#   pckdir            <package-name>  Name of package directory. It is always the
-#                                     name of the directory in /usr/share
+#   pckdir            <package-name>  Name of the package subdirectory
 #
-#
-# Each standard directory can also be prefixed a 'pck'. That will create a
-# subdirectory with the package's name in the base standard directory. Eg.
-# 'pcketcdir' will create the directory '/etc/<name>'
+# A standard directory resolves to the system directory listed above if it is
+# the only directory in the package and otherwise to a package subdirectory
+# named after the package (eg. /etc/<name>). Use the 'sys' or 'pck' prefixed
+# variants to choose explicitly: 'sysetcdir' is always /etc and 'pcketcdir' is
+# always /etc/<name>. There is no package specific directory for bindir and
+# sbindir. See 'qrpm --help' for the full list of built-in variables
 #
 
