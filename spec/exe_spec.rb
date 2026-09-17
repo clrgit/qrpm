@@ -18,6 +18,29 @@ describe "qrpm executable" do
 
   attr_reader :dir
 
+  describe "--template" do
+    it "generates a template file" do
+      stdout, stderr, status = qrpm("-t", chdir: dir)
+      expect(status).to be_success, stderr
+      expect(File).to exist "#{dir}/qrpm.yml"
+      expect(stdout).to include "Generated qrpm.yml"
+    end
+
+    it "refuses to overwrite an existing file" do
+      File.write "#{dir}/qrpm.yml", ""
+      _stdout, stderr, status = qrpm("-t", chdir: dir)
+      expect(status).not_to be_success
+      expect(stderr).to include "Won't overwrite existing file"
+    end
+
+    it "overwrites an existing file with --force-template" do
+      File.write "#{dir}/qrpm.yml", ""
+      _stdout, stderr, status = qrpm("-T", chdir: dir)
+      expect(status).to be_success, stderr
+      expect(File.size("#{dir}/qrpm.yml")).to be > 0
+    end
+  end
+
   describe "--help" do
     let(:help) { qrpm("--help").first }
 

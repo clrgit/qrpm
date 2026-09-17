@@ -211,7 +211,7 @@ begin
 
   if opts.template? || opts.force_template?
     outfile = opts.template || opts.force_template || Qrpm::QRPM_CONFIG_FILE
-    opts.force_template? || !File.exists?(outfile) or ShellOpts.error "Won't overwrite existing file: #{outfile}"
+    opts.force_template? || !File.exist?(outfile) or ShellOpts.error "Won't overwrite existing file: #{outfile}"
     FileUtils::cp Qrpm::QRPM_CONFIG_FILE_TEMPLATE, outfile
     puts "Generated #{outfile}" if !opts.quiet?
     exit
