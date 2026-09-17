@@ -43,6 +43,13 @@ describe "Qrpm::Rpm" do
       expect(spec).to include "ln -f /usr/bin/second /usr/sbin/second"
     end
 
+    it "resolves rootbindir and rootsbindir on this system" do
+      spec = render("$rootbindir" => ["bin/file"], "$rootsbindir" => ["sbin/file"])
+      expect(spec).to include "\n#{Qrpm.resolve_dir("/bin")}/file\n"
+      expect(spec).to include "\n#{Qrpm.resolve_dir("/sbin")}/file\n"
+      expect(spec).not_to include "//"
+    end
+
     it "sets permissions using %attr instead of chmod" do
       spec = render("$bindir" => [{ "file" => "bin/file", "perm" => "0600" }])
       expect(spec).to include "%attr(0600,-,-) /usr/bin/file"

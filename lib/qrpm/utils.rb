@@ -85,6 +85,15 @@ module Qrpm
     status.success? ? parse_version(branch.chomp)&.first : nil
   end
 
+  # Return the directory that +path+ resolves to on this system if +path+ is
+  # a symbolic link and +path+ itself otherwise. Used to detect merged /usr
+  # systems where /bin is a link to /usr/bin
+  def self.resolve_dir(path)
+    File.symlink?(path) ? File.realpath(path) : path
+  rescue SystemCallError
+    path
+  end
+
   # True if the git repository has uncommitted changes to tracked files below
   # +dir+. Changes elsewhere in the repository and untracked files are ignored.
   # A directory that is not part of a git repository is not dirty

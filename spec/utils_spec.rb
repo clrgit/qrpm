@@ -44,6 +44,22 @@ describe "Qrpm" do
     end
   end
 
+  describe "::resolve_dir" do
+    it "resolves symbolic links" do
+      Dir.mktmpdir { |dir|
+        FileUtils.mkdir "#{dir}/target"
+        File.symlink "target", "#{dir}/link"
+        expect(Qrpm.resolve_dir("#{dir}/link")).to eq File.realpath("#{dir}/target")
+      }
+    end
+    it "returns other paths unchanged" do
+      Dir.mktmpdir { |dir|
+        expect(Qrpm.resolve_dir(dir)).to eq dir
+        expect(Qrpm.resolve_dir("#{dir}/missing")).to eq "#{dir}/missing"
+      }
+    end
+  end
+
   describe "::chmod_to_octal" do
     def octal(mode) Qrpm.chmod_to_octal(mode) end
 

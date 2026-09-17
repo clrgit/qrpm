@@ -52,12 +52,21 @@ module Qrpm
     rundir lockdir cachedir logdir tmpdir
   )
 
-  # $rootdir is a prefix of all other directories. It is empty by default so
-  # that "$rootdir/etc" becomes "/etc" and not "//etc"
+  # The root directories are the prefixes that the system directories are
+  # derived from, like the prefix variables of autoconf: rootconfdir is
+  # sysconfdir, rootexecdir is exec_prefix, rootconstdir is datarootdir, and
+  # rootdatadir is localstatedir. $rootdir is a prefix of all of them. It is
+  # empty by default so that "$rootdir/etc" becomes "/etc" and not "//etc"
+  #
+  # rootbindir and rootsbindir are /bin and /sbin, but on systems where those
+  # are symbolic links (merged /usr) they are the directories the links point
+  # to, typically /usr/bin and /usr/sbin
   ROOT_DIRS = {
     rootdir: "",
     rootconfdir: "$rootdir/etc",
     rootexecdir: "$rootdir/usr",
+    rootbindir: "$rootdir#{resolve_dir("/bin")}",
+    rootsbindir: "$rootdir#{resolve_dir("/sbin")}",
     rootlibdir: "$rootdir/usr",
     rootconstdir: "$rootdir/usr/share",
     rootdocdir: "$rootconstdir",
@@ -66,8 +75,8 @@ module Qrpm
 
   SYSTEM_DIRS = {
     sysetcdir: "$rootconfdir",
-    sysbindir: "$rootexecdir/bin",
-    syssbindir: "$rootexecdir/sbin",
+    sysbindir: "$rootbindir",
+    syssbindir: "$rootsbindir",
     syslibdir: "$rootlibdir/lib64",
     syslibexecdir: "$rootexecdir/libexec",
     syssharedir: "$rootconstdir",
