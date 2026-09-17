@@ -52,7 +52,6 @@ begin
       part of the command so only one command is allowed. This restriction keeps
       the parser simple, it may change in the future
 
-
     STANDARD VARIABLES
       The following RPM variables are recognized. They all have defaults:
 
@@ -86,27 +85,6 @@ begin
         require
           List of required RPM packages
 
-    VERSIONS
-      The version is searched for in the git history of the source directory
-      when the qrpm file has no 'version' field. The highest version among
-      the tags reachable from HEAD wins. If there is none, the name of the
-      current branch is used. It is an error if no version is found, add a
-      'version' field in that case
-
-      A tag or branch looks like a version if it is a semantic version with
-      the usual quirks: an optional prefix like 'release-' or 'release/', an
-      optional 'v', a pre-release suffix like '-rc1' or '.beta2', and build
-      metadata after '+'. Only the version and the pre-release suffix are
-      used and the suffix is separated with '~' so that rpm orders it before
-      the final version, eg. 'v2.0.0-rc1' becomes '2.0.0~rc1'
-
-      'version_file' names a file relative to the source directory that is
-      scanned for the first occurrence of a version (with at least one dot)
-      instead of searching the git history. It can't be used together with
-      'version':
-
-        version_file: lib/mypackage/version.rb
-
     ROUTINES
       Routines are shell scripts that run when the package is built or when
       it is installed or uninstalled. They are not interpolated. Instead the
@@ -131,25 +109,10 @@ begin
         post_uninstall
           Runs on the installation host after the package is uninstalled
 
-    INCLUDE FILES
-      The qrpm file can include other files that are searched for in a list of
-      directories. Relative paths are relative to the directory of the qrpm file
-      (but see the -C option). The search directories can be set on the command
-      line using the -I option
-
     BUILT-IN VARIABLES
-      There are the following built-in variables. They are listed below with
-      their default values
-
-      The root directories are the prefixes that the system directories are
-      derived from. They correspond to the prefix variables of autoconf:
-      rootconfdir is sysconfdir, rootexecdir is exec_prefix (the root of the
-      architecture dependent files bin, sbin, lib and libexec), rootconstdir
-      is datarootdir, and rootdatadir is localstatedir. rootdir is a prefix
-      of all other directories and not a directory in itself. It is empty by
-      default. rootbindir and rootsbindir are /bin and /sbin, but on systems
-      where those are symbolic links (merged /usr) they are the directories
-      the links point to, typically /usr/bin and /usr/sbin:
+      There are the following built-in variables. They are listed below with their
+      default values. Note that rootdir is a prefix of all other directories and
+      not a directory in itself, it is empty by default
 
         rootdir
         rootconfdir     /etc
@@ -197,8 +160,43 @@ begin
         pcklogdir       /var/log/NAME
         pcktmpdir       /tmp/NAME
 
+    VERSIONS
+      The version is searched for in the git history of the source directory
+      when the qrpm file has no 'version' field. The highest version among
+      the tags reachable from HEAD wins. If there is none, the name of the
+      current branch is used. It is an error if no version is found, add a
+      'version' field in that case
+
+      A tag or branch looks like a version if it is a semantic version with
+      the usual quirks: an optional prefix like 'release-' or 'release/', an
+      optional 'v', a pre-release suffix like '-rc1' or '.beta2', and build
+      metadata after '+'. Only the version and the pre-release suffix are
+      used and the suffix is separated with '~' so that rpm orders it before
+      the final version, eg. 'v2.0.0-rc1' becomes '2.0.0~rc1'
+
+      'version_file' names a file relative to the source directory that is
+      scanned for the first occurrence of a version (with at least one dot)
+      instead of searching the git history. It can't be used together with
+      'version':
+
+        version_file: lib/mypackage/version.rb
+
     INSTALLATION DIRECTORIES
-      .
+      The root directories are the prefixes that the system directories are
+      derived from. They correspond to the prefix variables of autoconf:
+      rootconfdir is sysconfdir, rootexecdir is exec_prefix (the root of the
+      architecture dependent files bin, sbin, lib and libexec), rootconstdir
+      is datarootdir, and rootdatadir is localstatedir. rootdir is a prefix
+      of all other directories and not a directory in itself. It is empty by
+      default. rootbindir and rootsbindir are /bin and /sbin, but on systems
+      where those are symbolic links (merged /usr) they are the directories
+      the links point to, typically /usr/bin and /usr/sbin:
+
+    INCLUDE FILES
+      The qrpm file can include other files that are searched for in a list of
+      directories. Relative paths are relative to the directory of the qrpm file
+      (but see the -C option). The search directories can be set on the command
+      line using the -I option
 
     OPTIONS
       -f,force
