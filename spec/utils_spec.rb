@@ -92,9 +92,16 @@ describe "Qrpm" do
       }
     end
 
-    it "returns the first version in the file" do
+    it "returns the version assigned to a version variable" do
       expect(scan("module X\n  VERSION = \"0.6.0\"\nend\n")).to eq "0.6.0"
       expect(scan("__version__ = '1.2.3-rc1'\n")).to eq "1.2.3~rc1"
+      expect(scan("{ \"name\": \"x\", \"version\": \"2.0.0\" }\n")).to eq "2.0.0"
+    end
+    it "skips other dotted numbers before the version assignment" do
+      expect(scan("[project]\nrequires-python = \">=3.8\"\nversion = \"2.1.0\"\n")).to eq "2.1.0"
+      expect(scan("# Needs Python 3.8+\n__version__ = '1.0'\n")).to eq "1.0"
+    end
+    it "falls back to the first version in the file" do
       expect(scan("1.2.3\n")).to eq "1.2.3"
       expect(scan("v1.0 and later 2.0")).to eq "1.0"
     end

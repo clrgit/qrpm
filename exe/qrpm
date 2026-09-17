@@ -175,8 +175,11 @@ begin
       the final version, eg. 'v2.0.0-rc1' becomes '2.0.0~rc1'
 
       'version_file' names a file relative to the source directory that is
-      scanned for the first occurrence of a version (with at least one dot)
-      instead of searching the git history. It can't be used together with
+      scanned for a version instead of searching the git history. The first
+      version that follows the word 'version' wins, as in VERSION = "1.2.3"
+      or __version__ = '1.2.3', so that other dotted numbers in the file are
+      skipped. If there is none, the first version-like token (with at least
+      one dot) in the file is used. It can't be used together with
       'version':
 
         version_file: lib/mypackage/version.rb

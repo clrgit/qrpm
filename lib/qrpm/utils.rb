@@ -36,15 +36,28 @@ module Qrpm
     [version, key]
   end
 
-  # Matches the first version-like token in a file. A dot is required so that
-  # a plain number is not mistaken for a version
+  # Matches a version-like token in a file. A dot is required so that a plain
+  # number is not mistaken for a version
   FILE_VERSION_RE = /[vV]?\d+(?:\.\d+)+(?:[-._]?(?:rc|alpha|beta|pre|dev|a|b)[-._]?\d*)?(?![\w.])/i
 
-  # Scan +file+ for the first occurrence of something that looks like a
-  # version and return it as an RPM version. Returns nil if none is found
+  # Matches a version assignment like VERSION = "1.2.3", __version__ = '1.2.3',
+  # version = "1.2.3" or "version": "1.2.3"
+  FILE_VERSION_ASSIGNMENT_RE = /version[\W_]{0,6}(?<version>#{FILE_VERSION_RE.source})/i
+
+  # Scan +file+ for a version and return it as an RPM version. The first
+  # version that follows the word 'version' wins, as in VERSION = "1.2.3",
+  # so that other dotted numbers in the file are skipped. If there is none,
+  # the first version-like token in the file is used. Returns nil if none is
+  # found
   def self.file_version(file)
-    m = FILE_VERSION_RE.match(IO.read(file)) or return nil
-    parse_version(m[0])&.first
+    text = IO.read(file)
+    version =
+        if (m = FILE_VERSION_ASSIGNMENT_RE.match(text))
+          m[:version]
+        elsif (m = FILE_VERSION_RE.match(text))
+          m[0]
+        end
+    version && parse_version(version)&.first
   end
 
   # Translate a chmod(1) symbolic mode like 'u=rwx,go=rx' to a four-digit
