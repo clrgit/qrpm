@@ -2,9 +2,9 @@ require 'open3'
 
 describe "Qrpm::Rpm" do
   # Compile a qrpm.yml hash and render the SPEC file
-  def render(yaml)
+  def render(yaml, dict = {})
     yaml = { "name" => "pck", "version" => "1.0.0", "summary" => "summary" }.merge(yaml)
-    Qrpm::Compiler.new({}).compile(yaml).rpm.render
+    Qrpm::Compiler.new(dict).compile(yaml).rpm.render
   end
 
   describe "#render" do
@@ -60,6 +60,66 @@ describe "Qrpm::Rpm" do
       spec = render("$bindir" => ["bin/file"])
       expect(spec).to match(/^\/usr\/bin\/file$/)
       expect(spec).not_to include "%attr"
+    end
+
+    describe "config" do
+      it "defaults to %config(noreplace) for files in /etc" do
+        spec = render("$pcketcdir" => ["etc/file"], "/etc/cron.d" => ["etc/cron"])
+        expect(spec).to include "%config(noreplace) /etc/pck/file\n"
+        expect(spec).to include "%config(noreplace) /etc/cron.d/cron\n"
+      end
+      it "follows overridden configuration directories" do
+        spec = render({ "$sysetcdir" => ["etc/a"], "$pcketcdir" => ["etc/b"] }, "sysetcdir" => "/opt/etc")
+        expect(spec).to include "%config(noreplace) /opt/etc/a\n"
+        expect(spec).to include "%config(noreplace) /opt/etc/pck/b\n"
+      end
+      it "has no default outside /etc" do
+        spec = render("$bindir" => ["bin/file"], "/etcetera" => ["bin/file2"])
+        expect(spec).not_to include "%config"
+      end
+      it "can be set explicitly" do
+        spec = render("$bindir" => [{ "file" => "bin/a", "config" => true }, { "file" => "bin/b", "config" => "noreplace" }],
+                      "$pcketcdir" => [{ "file" => "etc/c", "config" => false }])
+        expect(spec).to include "%config /usr/bin/a\n"
+        expect(spec).to include "%config(noreplace) /usr/bin/b\n"
+        expect(spec).to include "\n/etc/pck/c\n"
+      end
+    end
+
+    describe "owner" do
+      it "emits %attr with user and group" do
+        spec = render("$bindir" => [
+            { "file" => "bin/a", "owner" => "apache.apache" },
+            { "file" => "bin/b", "owner" => "apache" },
+            { "file" => "bin/c", "owner" => ".apache", "perm" => "0640" }])
+        expect(spec).to include "%attr(-,apache,apache) /usr/bin/a\n"
+        expect(spec).to include "%attr(-,apache,-) /usr/bin/b\n"
+        expect(spec).to include "%attr(0640,-,apache) /usr/bin/c\n"
+      end
+      it "combines with config" do
+        spec = render("$pcketcdir" => [{ "file" => "etc/a", "owner" => "apache" }])
+        expect(spec).to include "%config(noreplace) %attr(-,apache,-) /etc/pck/a\n"
+      end
+    end
+
+    describe "directories" do
+      it "creates an empty directory with owner and permissions" do
+        spec = render("$vardir" => [{ "dir" => "store", "owner" => "apache.apache", "perm" => "0750" }])
+        expect(spec).to include "mkdir -p %{buildroot}/var/lib %{buildroot}/var/lib/store\n"
+        expect(spec).to include "%dir %attr(0750,apache,apache) /var/lib/store\n"
+        expect(spec).not_to include "cp "
+      end
+      it "lets other entries add files to the directory" do
+        spec = render("$pckvardir" => [{ "dir" => "store", "perm" => "0750" }], "$pckvardir/store" => ["var/file"])
+        expect(spec).to include "%dir %attr(0750,-,-) /var/lib/pck/store\n"
+        expect(spec).to include "\n/var/lib/pck/store/file\n"
+        expect(spec[/^mkdir.*$/].scan("%{buildroot}/var/lib/pck/store").size).to eq 1
+      end
+      it "does not get a config default" do
+        spec = render("$pcketcdir" => [{ "dir" => "conf.d" }])
+        expect(spec).to include "%dir /etc/pck/conf.d\n"
+        expect(spec).not_to include "%config"
+      end
     end
 
     describe "routines" do

@@ -239,9 +239,19 @@ module Qrpm
   #   perm        Permissions of the target file in octal notation. Symbolic
   #               chmod(1) modes are translated to octal by the compiler. May
   #               be nil
+  #   owner       Owner of the target file in user.group notation. Either
+  #               part can be left out. May be nil
+  #   config      Configuration file: "true", "noreplace", or "false". Files
+  #               in the configuration directory default to "noreplace". May
+  #               be nil
+  #   dir         Name of a directory that is created on the target system.
+  #               It is initially empty but other entries can add files to
+  #               it. This makes it possible to set the permissions and owner
+  #               of a directory
   #
-  # Exactly one of 'file', 'symlink', and 'reflink' must be defined. 'perm'
-  # can't be used together with 'symlink' or 'reflink'
+  # Exactly one of 'file', 'symlink', 'reflink', and 'dir' must be defined.
+  # 'perm', 'owner', and 'config' can't be used together with 'symlink' or
+  # 'reflink', and 'name' and 'config' can't be used together with 'dir'
   #
   # When interpolated the following methods are defined on a FileNode:
   #
@@ -251,6 +261,9 @@ module Qrpm
   #   reflink     Path to source link
   #   symlink     Path to source link
   #   perm        Permissions
+  #   owner       Owner (user)
+  #   group       Group
+  #   config      Configuration file setting
   #
   class FileNode < HashNode
     # Source file. This is the relative path to the file in the build directory
@@ -273,14 +286,34 @@ module Qrpm
     # Permissions of destination file. Perm is always a string
     attr_reader :perm
 
+    # Owner (user) and group of the destination file. Nil if not set
+    attr_reader :owner
+    attr_reader :group
+
+    # Configuration file setting: "true", "noreplace", "false", or nil.
+    # Defaults to "noreplace" for files in the configuration directory
+    attr_reader :config
+
     # Directory
     def directory = parent.directory
 
     # Query methods
-    def file? = !link?
+    def file? = !link? && !dir?
     def link? = symlink? || reflink?
     def reflink? = @expr.key?("reflink")
     def symlink? = @expr.key?("symlink")
+    def dir? = @expr.key?("dir")
+    def config? = config == "true" || config == "noreplace"
+
+    # Directives for the entry in the %files section of the spec file: %dir,
+    # %config, and %attr
+    def directives
+      d = []
+      d << "%dir" if dir?
+      d << (config == "noreplace" ? "%config(noreplace)" : "%config") if config?
+      d << "%attr(#{perm || "-"},#{owner || "-"},#{group || "-"})" if perm || owner || group
+      d
+    end
 
     def initialize(parent, name)
       constrain parent, DirectoryNode
@@ -291,12 +324,15 @@ module Qrpm
     def interpolate(dict)
       super
       exprs.each { |e| e.interpolate(dict) }
-      @srcpath = value[%w(file symlink reflink).find { |k| expr.key?(k) }].value
-      @dstname = value["name"]&.value || File.basename(srcpath)
+      @srcpath = value[%w(file symlink reflink).find { |k| expr.key?(k) }]&.value
+      @dstname = value["name"]&.value || value["dir"]&.value || File.basename(srcpath)
       @dstpath = "#{parent.directory}/#{@dstname}"
       @reflink = value["reflink"]&.value
       @symlink = value["symlink"]&.value
       @perm = value["perm"]&.value
+      @owner, @group = ::Qrpm.parse_owner(value["owner"].value) if value["owner"]
+      @config = value["config"]&.value
+      @config ||= "noreplace" if file? && config_dirs(dict).any? { |d| dstpath.start_with?("#{d}/") }
       self
     end
 
@@ -313,13 +349,13 @@ module Qrpm
     end
 
     # Signature. Used in tests
-    def signature = "FileNode(#{name},#{expr["file"].source})"
+    def signature = "FileNode(#{name},#{(expr["file"] || expr["dir"]).source})"
 
     # Path to source file. Returns the QRPM source expression or the
-    # interpolated result if the FileNode object has been interpolated. Used by
-    # Qrpm#dump
+    # interpolated result if the FileNode object has been interpolated. Nil
+    # for directories. Used by Qrpm#dump
     def src
-      e = expr["file"] || expr["reflink"] || expr["symlink"]
+      e = expr["file"] || expr["reflink"] || expr["symlink"] or return nil
       interpolated? ? e.value : e.source
     end
 
@@ -329,9 +365,20 @@ module Qrpm
     def dst
       if expr["name"]
         interpolated? ? expr["name"].value : expr["name"].expr.source
+      elsif expr["dir"]
+        interpolated? ? expr["dir"].value : expr["dir"].expr.source
       else
         File.basename(src)
       end
+    end
+
+  private
+    # The configuration directories on root, system, and package level. Files
+    # in them are configuration files by default. The values from the
+    # dictionary are used when they have been evaluated and the standard
+    # values otherwise
+    def config_dirs(dict)
+      [dict["rootconfdir"] || "/etc", dict["sysetcdir"] || "/etc", dict["pcketcdir"]].compact.uniq
     end
   end
 

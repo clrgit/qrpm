@@ -106,13 +106,17 @@ module Qrpm
           puts d.key
           indent {
             d.values.each { |f|
-              if f.file? && File.basename(f.src) == f.dst
+              if f.dir?
+                print "#{f.dst}/"
+              elsif f.file? && File.basename(f.src) == f.dst
                 print f.src
               else
                 joiner = f.file? ? "->" : (f.reflink? ? "~>" : "~~>")
                 print "#{f.src} #{joiner} #{f.dst}"
               end
               print ", perm: #{f.perm}" if f.perm
+              print ", owner: #{[f.owner, f.group].compact.join(".")}" if f.owner || f.group
+              print ", config: #{f.config}" if f.config
               puts
             }
           }

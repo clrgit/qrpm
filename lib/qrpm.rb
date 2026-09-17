@@ -135,6 +135,6 @@ module Qrpm
   # Fields that are shell scripts, see Fragment::RoutineFragment
   ROUTINES = Rpm::ROUTINES
 
-  FILE_KEYS = %w(name file symlink reflink perm)
+  FILE_KEYS = %w(name file symlink reflink dir perm owner config)
 end
 

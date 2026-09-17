@@ -60,7 +60,29 @@ describe "Qrpm" do
         expect { file("symlink" => "f", "perm" => "0644") }.to raise_error(Qrpm::CompileError)
       end
       it "rejects unknown attributes" do
-        expect { file("file" => "f", "owner" => "root") }.to raise_error(Qrpm::CompileError, /owner/)
+        expect { file("file" => "f", "colour" => "red") }.to raise_error(Qrpm::CompileError, /colour/)
+      end
+      it "accepts config values" do
+        expect(file("file" => "f", "config" => true).expr["config"].source).to eq "true"
+        expect(file("file" => "f", "config" => false).expr["config"].source).to eq "false"
+        expect(file("file" => "f", "config" => "noreplace").expr["config"].source).to eq "noreplace"
+        expect { file("file" => "f", "config" => "maybe") }.to raise_error(Qrpm::CompileError, /config/)
+      end
+      it "accepts owner in user.group notation" do
+        expect(file("file" => "f", "owner" => "apache.apache").expr["owner"].source).to eq "apache.apache"
+        expect(file("file" => "f", "owner" => "$owner").expr["owner"].source).to eq "$owner"
+        expect { file("file" => "f", "owner" => "a.b.c") }.to raise_error(Qrpm::CompileError, /owner/)
+        expect { file("file" => "f", "owner" => ".") }.to raise_error(Qrpm::CompileError, /owner/)
+      end
+      it "accepts directories" do
+        expect(file("dir" => "d").expr["dir"].source).to eq "d"
+        expect { file("dir" => "d", "file" => "f") }.to raise_error(Qrpm::CompileError, /Exactly one/)
+        expect { file("dir" => "d", "name" => "n") }.to raise_error(Qrpm::CompileError, /name/)
+        expect { file("dir" => "d", "config" => true) }.to raise_error(Qrpm::CompileError, /config/)
+      end
+      it "rejects perm, owner, and config together with links" do
+        expect { file("symlink" => "f", "owner" => "root") }.to raise_error(Qrpm::CompileError, /owner/)
+        expect { file("symlink" => "f", "config" => true) }.to raise_error(Qrpm::CompileError, /config/)
       end
     end
 

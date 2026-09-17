@@ -44,6 +44,20 @@ describe "Qrpm" do
     end
   end
 
+  describe "::parse_owner" do
+    it "parses user.group" do
+      expect(Qrpm.parse_owner("apache.apache")).to eq ["apache", "apache"]
+      expect(Qrpm.parse_owner("apache")).to eq ["apache", nil]
+      expect(Qrpm.parse_owner(".apache")).to eq [nil, "apache"]
+    end
+    it "rejects illegal owners" do
+      expect { Qrpm.parse_owner("") }.to raise_error(ArgumentError)
+      expect { Qrpm.parse_owner(".") }.to raise_error(ArgumentError)
+      expect { Qrpm.parse_owner("a.b.c") }.to raise_error(ArgumentError)
+      expect { Qrpm.parse_owner("a b") }.to raise_error(ArgumentError)
+    end
+  end
+
   describe "::resolve_dir" do
     it "resolves symbolic links" do
       Dir.mktmpdir { |dir|

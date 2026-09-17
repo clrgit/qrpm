@@ -188,13 +188,39 @@ module Qrpm
       unknown_keys.empty? or 
           error "Illegal file attribute(s): #{unknown_keys.join(", ")}"
 
-      # Check that exactly one of "file", "symlink", or "reflink" is defined
-      (hash.keys & %w(file symlink reflink)).size == 1 or 
-          error "Exactly one of 'file', 'symlink', or 'reflink' should be defined"
+      # Check that exactly one of "file", "symlink", "reflink", or "dir" is defined
+      (hash.keys & %w(file symlink reflink dir)).size == 1 or 
+          error "Exactly one of 'file', 'symlink', 'reflink', or 'dir' should be defined"
 
-      # Check that perm is not used together with symlink or reflink
-      (hash.keys & %w(symlink reflink)).empty? || !hash.key?("perm") or
-          error "Can't use 'perm' together with 'symlink' or 'reflink'"
+      # Check that perm, owner, and config are not used together with links
+      illegal = hash.keys & %w(perm owner config)
+      (hash.keys & %w(symlink reflink)).empty? || illegal.empty? or
+          error "Can't use '#{illegal.first}' together with 'symlink' or 'reflink'"
+
+      # Check that name and config are not used together with dir
+      if hash.key?("dir")
+        illegal = hash.keys & %w(name config)
+        illegal.empty? or error "Can't use '#{illegal.first}' together with 'dir'"
+      end
+
+      # Normalize config (YAML parses true/false as booleans)
+      case hash["config"]
+        when nil; # ok
+        when true, "true"; hash["config"] = "true"
+        when false, "false"; hash["config"] = "false"
+        when "noreplace"; # ok
+      else
+        error "Illegal config value '#{hash["config"]}', use true, false, or noreplace"
+      end
+
+      # Check owner. Variables are left as they are
+      if hash.key?("owner") && hash["owner"].to_s !~ /\$/
+        begin
+          ::Qrpm.parse_owner(hash["owner"])
+        rescue ArgumentError => ex
+          error ex.message
+        end
+      end
 
       # Normalize perm (YAML parses a literal 0644 as the integer 420!)
       hash["perm"] = sprintf "%04o", hash["perm"] if hash["perm"].is_a?(Integer)

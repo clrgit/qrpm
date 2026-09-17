@@ -54,6 +54,26 @@ post_uninstall: # Shell script run on the installation host after uninstall
 #   perm: Permissions in octal or symbolic chmod(1) notation, eg. 0640 or
 #         u=rw,g=r,o=. Defaults are the source file's permissions. Can't be
 #         used together with :symlink or :reflink
+#   owner: Owner in user.group notation. Either part can be left out, eg.
+#         'apache.apache', 'apache', or '.apache'. Can't be used together
+#         with :symlink or :reflink
+#   config: Configuration file: true, false, or noreplace. A configuration
+#         file is saved on upgrade (true) or kept with the new file saved next
+#         to it (noreplace). Files in /etc default to noreplace
+#   dir:  Name of a directory that is created on the target system. It is
+#         initially empty but other entries can add files to it. This makes
+#         it possible to set the permissions and owner of a directory. Can't
+#         be used together with :name, :file, :symlink, :reflink, or :config
+#
+# A directory with permissions and files in it is specified like this
+#
+#   /var/lib/my_package:
+#     - dir: store
+#       owner: apache.apache
+#       perm: 0750
+#
+#   /var/lib/my_package/store:
+#     - src/initial_data
 #
 # It is used like this
 #   

@@ -82,6 +82,7 @@ module Qrpm
     attr_reader :spec
 
     def files() @files ||= nodes.select(&:file?) end
+    def dirs() @dirs ||= nodes.select(&:dir?) end
     def links() @links ||= nodes.select(&:link?) end
     def reflinks() @reflinks ||= nodes.select(&:reflink?) end
     def symlinks() @symlinks ||= nodes.select(&:symlink?) end

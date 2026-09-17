@@ -98,6 +98,16 @@ module Qrpm
     status.success? ? parse_version(branch.chomp)&.first : nil
   end
 
+  # Parse an owner in user.group notation and return [user, group]. Either
+  # part can be left out: "apache" is the user only and ".apache" the group
+  # only. A missing part is nil. Raises ArgumentError on illegal input
+  def self.parse_owner(owner)
+    m = /\A([^.\s]*)(?:\.([^.\s]*))?\z/.match(owner.to_s) or raise ArgumentError, "Illegal owner '#{owner}'"
+    user, group = m[1], m[2]
+    !user.to_s.empty? || !group.to_s.empty? or raise ArgumentError, "Illegal owner '#{owner}'"
+    [user.to_s.empty? ? nil : user, group.to_s.empty? ? nil : group]
+  end
+
   # Return the directory that +path+ resolves to on this system if +path+ is
   # a symbolic link and +path+ itself otherwise. Used to detect merged /usr
   # systems where /bin is a link to /usr/bin

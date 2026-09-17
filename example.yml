@@ -114,9 +114,19 @@ $bindir:
 #             (u=rw,g=r,o=). Default is the permissions of the source
 #   symlink   Path on the target system that the destination links to
 #   reflink   Path on the target system that the destination hard links to
+#   owner     Owner in user.group notation, eg. apache.apache, apache, or
+#             .apache
+#   config    Configuration file: true, false, or noreplace. Files in /etc
+#             default to noreplace, so they are kept on upgrade and the new
+#             file is saved next to them
+#   dir       Name of a directory that is created on the target system. It
+#             is initially empty but other entries can add files to it, which
+#             makes it possible to set the permissions and owner of a
+#             directory
 #
-# Exactly one of file, symlink, and reflink must be given. perm can't be used
-# with links
+# Exactly one of file, symlink, reflink, and dir must be given. perm, owner,
+# and config can't be used with links, and name and config can't be used
+# with dir
 $sbindir:
   - name: example-admin
     file: bin/a_file
@@ -133,6 +143,8 @@ $pcksharedir:
 $pcksharedir/data:
   - share/some_other_data
 
+# A directory can also be a variable. $pg.libdir is the libdir member of the
+# pg variable defined above, so this is /usr/pgsql-15/lib
 $pg.libdir:
   - share/some_data
 
@@ -140,6 +152,29 @@ $prefix/etc:
   - name: ${name}.conf
     file: share/some_data
     perm: 0640
+    config: noreplace           # Not under /etc, so it must be given
+
+# Files in /etc are configuration files by default
+$pcketcdir:
+  - name: settings
+    file: share/some_data
+  - name: generated             # Overwritten on upgrade, old file saved as .rpmsave
+    file: share/some_other_data
+    config: true
+
+# A directory entry creates a directory with the given owner and permissions.
+# It is initially empty, but other entries can add files to it. Here the
+# store directory belongs to nobody and holds a file owned by the nobody group
+$pckvardir:
+  - dir: store
+    owner: nobody.nobody
+    perm: 0750
+  - dir: cache                  # An empty directory with default owner and permissions
+
+$pckvardir/store:
+  - name: data
+    file: share/some_data
+    owner: .nobody
 
 __END__
 Everything after __END__ is ignored
