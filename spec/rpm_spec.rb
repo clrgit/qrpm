@@ -34,13 +34,13 @@ describe "Qrpm::Rpm" do
       expect(spec).to include "ln -sf /usr/bin/second /usr/sbin/second"
     end
 
-    it "emits one ln line per reflink" do
+    it "emits one hard link ln line per reflink" do
       spec = render("$sbindir" => [
           { "reflink" => "/usr/bin/first" },
           { "reflink" => "/usr/bin/second" }
       ])
-      expect(spec).to include "ln -sf /usr/bin/first /usr/sbin/first"
-      expect(spec).to include "ln -sf /usr/bin/second /usr/sbin/second"
+      expect(spec).to include "ln -f /usr/bin/first /usr/sbin/first"
+      expect(spec).to include "ln -f /usr/bin/second /usr/sbin/second"
     end
 
     it "sets permissions using %attr instead of chmod" do

@@ -56,7 +56,7 @@ true # no-op
 <% end -%>
 %post
 <% for link in reflinks -%>
-ln -sf <%= link.reflink %> <%= link.dstpath %>
+ln -f <%= link.reflink %> <%= link.dstpath %>
 <% end -%>
 <% for link in symlinks -%>
 ln -sf <%= link.symlink %> <%= link.dstpath %>
