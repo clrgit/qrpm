@@ -35,7 +35,6 @@ begin
     in git (which needs to be present). Other defaults are detailed below
 
     SETUP
-
       Use qrpm -t to generate a template qrpm.yml file:
 
         qrpm -t [TEMPLATE-FILE]
@@ -43,7 +42,6 @@ begin
       Then customize as needed
 
     VARIABLES
-
       The configuration file can define and use variables. They are defined by
       key/value definitions and the value can refer to values of other
       variables using $NAME or ${NAME}. Variables can also be given on the
@@ -54,27 +52,22 @@ begin
       part of the command so only one command is allowed. This restriction keeps
       the parser simple, it may change in the future
 
-      The special 'make' variable takes a string and executes it before packaing
-      the project
 
-    MANDATORY VARIABLES
-
-      The following variables must be defined. They all have defaults so they
-      can be left out if the defaults are right:
+    STANDARD VARIABLES
+      The following RPM variables are recognized. They all have defaults:
 
         name
           Name of the package. Default is the name of the current directory
 
         version
-          Version number. Default is the newest tag in the git repository of
-          the source directory with everything but digits and dots removed.
-          It is an error if the repository has no tags. Add a 'version'
-          field to the qrpm file in that case
+          Version number. The default is extracted from the newest tag/branch
+          in the git history. See VERSIONS below
+
+        version_file
+          File that is scanned for the version. An alternative to 'version'
 
         summary
           A short one-line text. Default 'The <name> RPM package'
-
-    OPTIONAL VARIABLES
 
         description
           A longer multiline text. Default is the summary
@@ -93,44 +86,86 @@ begin
         require
           List of required RPM packages
 
-    ROUTINES
+    VERSIONS
+      The version is searched for in the git history of the source directory
+      when the qrpm file has no 'version' field. The highest version among
+      the tags reachable from HEAD wins. If there is none, the name of the
+      current branch is used. It is an error if no version is found, add a
+      'version' field in that case
 
-      Routines are multiline shell commands that run when a package is built
-      or before/after a package is installed or uninstalled:
+      A tag or branch looks like a version if it is a semantic version with
+      the usual quirks: an optional prefix like 'release-' or 'release/', an
+      optional 'v', a pre-release suffix like '-rc1' or '.beta2', and build
+      metadata after '+'. Only the version and the pre-release suffix are
+      used and the suffix is separated with '~' so that rpm orders it before
+      the final version, eg. 'v2.0.0-rc1' becomes '2.0.0~rc1'
+
+      'version_file' names a file relative to the source directory that is
+      scanned for the first occurrence of a version (with at least one dot)
+      instead of searching the git history. It can't be used together with
+      'version':
+
+        version_file: lib/mypackage/version.rb
+
+    ROUTINES
+      Routines are shell scripts that run when the package is built or when
+      it is installed or uninstalled. They are not interpolated. Instead the
+      qrpm variables they refer to as $name or ${name} are defined as shell
+      variables at the top of the script, so shell variables like $HOME,
+      positional parameters like $1, and $(...) constructs work as usual.
+      Variable names can't start with a digit for that reason:
 
         make
-          Runs on the build host when the package is built
+          Runs on the build host in the source directory when the package is
+          built
 
-        pre/post
-          Runs on the install host before/after installation
+        pre
+          Runs on the installation host before the package is installed
 
-        pre_uninstall/post_uninstall
-          Runs on the install host before/after uninstallation
+        post
+          Runs on the installation host after the package is installed
+
+        pre_uninstall
+          Runs on the installation host before the package is uninstalled
+
+        post_uninstall
+          Runs on the installation host after the package is uninstalled
 
     INCLUDE FILES
-
       The qrpm file can include other files that are searched for in a list of
       directories. Relative paths are relative to the directory of the qrpm file
       (but see the -C option). The search directories can be set on the command
       line using the -I option
 
     BUILT-IN VARIABLES
+      There are the following built-in variables. They are listed below with
+      their default values
 
-      There are the following built-in variables. They are listed below with their
-      default values. Note that rootdir is a prefix of all other directories and
-      not a directory in itself. It is empty by default:
+      The root directories are the prefixes that the system directories are
+      derived from. They correspond to the prefix variables of autoconf:
+      rootconfdir is sysconfdir, rootexecdir is exec_prefix (the root of the
+      architecture dependent files bin, sbin, lib and libexec), rootconstdir
+      is datarootdir, and rootdatadir is localstatedir. rootdir is a prefix
+      of all other directories and not a directory in itself. It is empty by
+      default. rootbindir and rootsbindir are /bin and /sbin, but on systems
+      where those are symbolic links (merged /usr) they are the directories
+      the links point to, typically /usr/bin and /usr/sbin:
 
         rootdir
         rootconfdir     /etc
         rootexecdir     /usr
+        rootbindir      /bin
+        rootsbindir     /sbin
         rootlibdir      /usr
         rootconstdir    /usr/share
         rootdocdir      /usr/share
         rootdatadir     /var
 
+      The system directories are the standard directories of the system:
+
         sysetcdir       /etc
-        sysbindir       /usr/bin
-        syssbindir      /usr/sbin
+        sysbindir       /bin
+        syssbindir      /sbin
         syslibdir       /usr/lib64
         syslibexecdir   /usr/libexec
         syssharedir     /usr/share
@@ -143,14 +178,18 @@ begin
         syslogdir       /var/log
         systmpdir       /tmp
 
+      The package directories are subdirectories of the system directories
+      named after the package. There are no package specific directories for
+      bin and sbin:
+
         pcketcdir       /etc/NAME
-        pckbindir       /usr/bin
-        pcksbindir      /usr/sbin
+        pckbindir       /bin
+        pcksbindir      /sbin
         pcklibdir       /usr/lib64/NAME
         pcklibexecdir   /usr/libexec/NAME
         pcksharedir     /usr/share/NAME
         pckdocdir       /usr/share/doc/NAME
-        pckvardir       /var/NAME
+        pckvardir       /var/lib/NAME
         pckspooldir     /var/spool/NAME
         pckrundir       /var/run/NAME
         pcklockdir      /var/lock/NAME
@@ -158,48 +197,46 @@ begin
         pcklogdir       /var/log/NAME
         pcktmpdir       /tmp/NAME
 
-      Note that there are no package specific directories for bin and sbin
-
     INSTALLATION DIRECTORIES
+      .
 
     OPTIONS
+      -f,force
+        Create package even if repository is dirty. Normally qrpm checks if the
+        current (git) directory is clean
 
-    -f,force
-      Create package even if repository is dirty. Normally qrpm checks if the
-      current (git) directory is clean
+      -C,directory=EDIR
+        Change to directory before doing anything else but include the current
+        directory in the search path. This makes it possible to override parts of
+        a spec file
 
-    -C,directory=EDIR
-      Change to directory before doing anything else but include the current
-      directory in the search path. This makes it possible to override parts of
-      a spec file
+      +I,include=EDIR
+        Include directory, later definitions are searched first
 
-    +I,include=EDIR
-      Include directory, later definitions are searched first
+      -s,spec=OFILE?
+        Only create the spec file and not the RPM package. Use this option to
+        inspect what RPM is going to do
 
-    -s,spec=OFILE?
-      Only create the spec file and not the RPM package. Use this option to
-      inspect what RPM is going to do
+      -S,source
+        Create a source RPM file instead of a regular RPM file
 
-    -S,source
-      Create a source RPM file instead of a regular RPM file
+      -t,template=OFILE?
+        Generate a QRPM template. It is in YAML format with the extension that a
+        single '__END__' terminates the file immediately. The name of the file
+        defaults to 'qrpm.yml'. It is an error if the file exists
 
-    -t,template=OFILE?
-      Generate a QRPM template. It is in YAML format with the extension that a
-      single '__END__' terminates the file immediately. The name of the file
-      defaults to 'qrpm.yml'. It is an error if the file exists
+      -T,force-template=OFILE?
+        Like --template but overwrites file if it exists
 
-    -T,force-template=OFILE?
-      Like --template but overwrites file if it exists
+      -b,builddir=NPATH?
+        Use the given path as the RPM build dir, default is 'builddir'. Doesn't
+        remove the directory afterwards. It it is an error if the directory exists
 
-    -b,builddir=NPATH?
-      Use the given path as the RPM build dir, default is 'builddir'. Doesn't
-      remove the directory afterwards. It it is an error if the directory exists
+      -B,force-builddir=PATH?
+        Like --builddir but overwrites the directory if it exists beforehand
 
-    -B,force-builddir=PATH?
-      Like --builddir but overwrites the directory if it exists beforehand
-
-    -d,dump
-      Dump internal data and exit. For debug
+      -d,dump
+        Dump internal data and exit. For debug
 
     COMMANDS
       show! -- QRPM-FILE VARIABLE...
