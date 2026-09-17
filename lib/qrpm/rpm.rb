@@ -31,7 +31,6 @@ module Qrpm
       "description" => [String],
       "packager" => [String],
       "license" => [String],
-      "group" => [String],
       "include" => [Array, String],
       "require" => [Array, String],
       "make" => [String]

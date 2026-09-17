@@ -4,9 +4,6 @@ Version: <%= version %>
 Release: <%= release %>
 License: <%= license %>
 Packager: <%= packager %>
-<% if group -%>
-  Group: <%= group %>
-<% end -%>
 <% for pck in require || [] -%>
   Requires: <%= pck %>
 <% end -%>

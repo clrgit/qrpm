@@ -14,6 +14,10 @@ describe "Qrpm::Rpm" do
       expect(spec).to match(/^Version: 1.0.0$/)
     end
 
+    it "does not emit a Group tag" do
+      expect(render({})).not_to match(/^Group:/)
+    end
+
     it "does not emit double slashes in paths" do
       spec = render("$bindir" => ["bin/file"], "$pcketcdir" => ["etc/file"])
       expect(spec).not_to include "//"

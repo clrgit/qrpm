@@ -52,7 +52,6 @@ describe "qrpm executable" do
     it "lists the RPM fields" do
       Qrpm::FIELDS.keys.each { |field|
         next if field == "include" # Described in its own section
-        next if field == "group" # Not documented, it is not needed on current RPM systems
         expect(help).to match(/^\s*#{field}$/), "#{field} is not documented"
       }
     end
