@@ -45,7 +45,11 @@ touch %{buildroot}<%= link.dstpath %>
 
 %files
 <% for file in files -%>
+<% if file.perm -%>
+%attr(<%= file.perm %>,-,-) <%= file.dstpath %>
+<% else -%>
 <%= file.dstpath %>
+<% end -%>
 <% end -%>
 <% for link in links -%>
 %ghost <%= link.dstpath %>
@@ -55,9 +59,6 @@ touch %{buildroot}<%= link.dstpath %>
 true # no-op
 
 %post
-<% for file in files.select(&:perm) -%>
-chmod <%= file.perm %> <%= file.dstpath %>
-<% end -%>
 <% for link in reflinks -%>
 ln -sf <%= link.reflink %> <%= link.dstpath %>
 <% end -%>

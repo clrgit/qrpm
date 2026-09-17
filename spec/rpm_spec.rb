@@ -38,5 +38,17 @@ describe "Qrpm::Rpm" do
       expect(spec).to include "ln -sf /usr/bin/first /usr/sbin/first"
       expect(spec).to include "ln -sf /usr/bin/second /usr/sbin/second"
     end
+
+    it "sets permissions using %attr instead of chmod" do
+      spec = render("$bindir" => [{ "file" => "bin/file", "perm" => "0600" }])
+      expect(spec).to include "%attr(0600,-,-) /usr/bin/file"
+      expect(spec).not_to include "chmod"
+    end
+
+    it "emits files without perm as plain paths" do
+      spec = render("$bindir" => ["bin/file"])
+      expect(spec).to match(/^\/usr\/bin\/file$/)
+      expect(spec).not_to include "%attr"
+    end
   end
 end
