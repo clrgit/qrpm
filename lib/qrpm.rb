@@ -52,8 +52,10 @@ module Qrpm
     rundir lockdir cachedir logdir tmpdir
   )
 
+  # $rootdir is a prefix of all other directories. It is empty by default so
+  # that "$rootdir/etc" becomes "/etc" and not "//etc"
   ROOT_DIRS = {
-    rootdir: "/",
+    rootdir: "",
     rootconfdir: "$rootdir/etc",
     rootexecdir: "$rootdir/usr",
     rootlibdir: "$rootdir/usr",

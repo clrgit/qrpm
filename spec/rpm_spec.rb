@@ -13,5 +13,12 @@ describe "Qrpm::Rpm" do
       expect(spec).to match(/^Name: pck$/)
       expect(spec).to match(/^Version: 1.0.0$/)
     end
+
+    it "does not emit double slashes in paths" do
+      spec = render("$bindir" => ["bin/file"], "$pcketcdir" => ["etc/file"])
+      expect(spec).not_to include "//"
+      expect(spec).to include "%{buildroot}/usr/bin"
+      expect(spec).to include "/etc/pck/file"
+    end
   end
 end

@@ -35,4 +35,17 @@ describe "qrpm executable" do
     end
   end
 
+  describe "show" do
+    it "outputs directory variables without double slashes" do
+      # Only variables used by a directory are evaluated and can be shown
+      yaml = {
+        "name" => "pck", "version" => "1.0.0", "summary" => "s",
+        "$sysetcdir" => ["etc/file"], "$pckvardir" => ["var/file"]
+      }
+      File.write "#{dir}/qrpm.yml", yaml.to_yaml
+      stdout, stderr, status = qrpm("show", "qrpm.yml", "sysetcdir", "pckvardir", chdir: dir)
+      expect(status).to be_success, stderr
+      expect(stdout).to eq "/etc\n/var/lib/pck\n"
+    end
+  end
 end

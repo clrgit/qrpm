@@ -117,9 +117,10 @@ begin
     BUILT-IN VARIABLES
 
       There are the following built-in variables. They are listed below with their
-      default values:
+      default values. Note that rootdir is a prefix of all other directories and
+      not a directory in itself. It is empty by default:
 
-        rootdir         /
+        rootdir
         rootconfdir     /etc
         rootexecdir     /usr
         rootlibdir      /usr
@@ -280,7 +281,7 @@ begin
 
   if opts.subcommand == :show!
     for variable in show
-      puts qrpm[variable].sub(/^\/\//, "/")
+      puts qrpm[variable]
     end
     exit
   end
