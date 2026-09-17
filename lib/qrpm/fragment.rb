@@ -172,6 +172,30 @@ module Qrpm
       end
     end
 
+    # The default value of the 'version' field. If +file+ is true the version
+    # is read from the file named by the 'version_file' variable, relative to
+    # the source directory. Otherwise it is searched for in the git history of
+    # the source directory
+    class VersionFragment < Fragment
+      def initialize(file: false)
+        super(file ? "$(version file)" : "$(git version)")
+        @file = file
+      end
+
+      def variables() @file ? ["srcdir", "version_file"] : ["srcdir"] end
+
+      def interpolate(dict)
+        if @file
+          name = dict["version_file"]
+          path = File.expand_path(name.to_s, dict["srcdir"])
+          File.file?(path) or raise ::Qrpm::Error, "Can't find version file '#{name}'"
+          ::Qrpm.file_version(path) or raise ::Qrpm::Error, "Can't find a version in '#{name}'"
+        else
+          ::Qrpm.git_version(dict["srcdir"])
+        end
+      end
+    end
+
     # A key or value as a list of Fragments
     class Expression < FragmentContainer
       def initialize(...)

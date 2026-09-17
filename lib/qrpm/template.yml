@@ -5,7 +5,8 @@
 name:           # Name of package. It is used in the package name
 summary:        # Short summary of package
 description:    # Optional longer description
-version:        # Version
+version:        # Version. Default is extracted from git, see 'qrpm --help'
+version_file:   # File to scan for the version. Alternative to version
 release:        # Release. Optional
 packager:       # Packager, default $USER
 require:        # List of required packages

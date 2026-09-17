@@ -60,6 +60,16 @@ module Qrpm
           unresolved.delete(path)
           @dict[path] = node.value if !node.is_a?(DirectoryNode) && !node.is_a?(FileNode)
         }
+
+        # Check that mandatory fields are non-empty after evaluation
+        MANDATORY_FIELDS.each { |field|
+          next if !@dict[field].to_s.empty?
+          if field == "version"
+            raise Error, "Can't find a version in the git history. Add a 'version' field to the qrpm file"
+          else
+            raise Error, "Empty mandatory field '#{field}'"
+          end
+        }
         self
       end
     end

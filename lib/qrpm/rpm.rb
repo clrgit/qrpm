@@ -6,6 +6,9 @@ module Qrpm
   #
   #   name        Package name (mandatory)
   #   version     Version (mandatory)
+  #   version_file
+  #               File that is scanned for the version. Alternative to
+  #               'version'
   #   release     Release
   #   summary     Short one-line description of package (mandatory)
   #   description Description
@@ -27,6 +30,7 @@ module Qrpm
 
     # Maps from field name to array of allowed types for that field
     FIELDS = MANDATORY_FIELDS.map { |f| [f, [String]] }.to_h.merge({
+      "version_file" => [String],
       "release" => [String],
       "description" => [String],
       "packager" => [String],

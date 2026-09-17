@@ -103,7 +103,10 @@ module Qrpm
   DEFAULTS = {
     "name" => "$(basename $PWD)",
     "summary" => "The $name RPM package",
-    "version" => "$(cd ${{srcdir}} >/dev/null && git tag -l 2>/dev/null | sort -V | tail -1 | tr -dc '.0-9' || echo 0.0.0)",
+    # Searched for in the git history of the source directory or read from
+    # $version_file, see Fragment::VersionFragment and Compiler#parse.
+    # Qrpm#evaluate reports an error if no version is found
+    "version" => nil,
     "description" => "$summary",
     "release" => "1",
     "license" => "GPL",

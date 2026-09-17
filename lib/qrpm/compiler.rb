@@ -66,10 +66,18 @@ module Qrpm
       # assignments to override spec file values
       dict.each { |k,v| ValueNode.new(ast, k.to_s, Fragment::Fragment.parse(v)) }
 
-      # Add defaults
+      # Add defaults. A key with a null value (as in the generated template)
+      # gets its default too
+      !has_value?("version") || !has_value?("version_file") or
+          error "Can't use both 'version' and 'version_file'"
       DEFAULTS.each { |k,v|
         next if k == "srcdir" # Special handling of $srcdir below
-        parse_node(@ast, k, v) if !@ast.key?(k)
+        next if has_value?(k)
+        if k == "version" # Special handling, see Fragment::VersionFragment
+          ValueNode.new(@ast, k, Fragment::VersionFragment.new(file: has_value?("version_file")))
+        else
+          parse_node(@ast, k, v)
+        end
       } if @use_defaults
 
       # Only add a default $srcdir node when :srcdir is true
@@ -153,6 +161,12 @@ module Qrpm
     # Shorthand
     def error(msg) 
       raise CompileError, msg, caller
+    end
+
+    # True if +key+ is defined in the AST with a non-null value
+    def has_value?(key)
+      node = @ast[key]
+      !node.nil? && !(node.is_a?(ValueNode) && node.expr.is_nil?)
     end
     
     def parse_file_node(parent, hash)
