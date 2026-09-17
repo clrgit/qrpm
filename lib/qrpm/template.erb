@@ -58,10 +58,10 @@ true # no-op
 <% for file in files.select(&:perm) -%>
 chmod <%= file.perm %> <%= file.dstpath %>
 <% end -%>
-<% for file in reflinks -%>
+<% for link in reflinks -%>
 ln -sf <%= link.reflink %> <%= link.dstpath %>
 <% end -%>
-<% for file in symlinks -%>
+<% for link in symlinks -%>
 ln -sf <%= link.symlink %> <%= link.dstpath %>
 <% end -%>
 

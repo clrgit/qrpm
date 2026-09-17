@@ -20,5 +20,23 @@ describe "Qrpm::Rpm" do
       expect(spec).to include "%{buildroot}/usr/bin"
       expect(spec).to include "/etc/pck/file"
     end
+
+    it "emits one ln line per symlink" do
+      spec = render("$sbindir" => [
+          { "symlink" => "/usr/bin/first" },
+          { "symlink" => "/usr/bin/second" }
+      ])
+      expect(spec).to include "ln -sf /usr/bin/first /usr/sbin/first"
+      expect(spec).to include "ln -sf /usr/bin/second /usr/sbin/second"
+    end
+
+    it "emits one ln line per reflink" do
+      spec = render("$sbindir" => [
+          { "reflink" => "/usr/bin/first" },
+          { "reflink" => "/usr/bin/second" }
+      ])
+      expect(spec).to include "ln -sf /usr/bin/first /usr/sbin/first"
+      expect(spec).to include "ln -sf /usr/bin/second /usr/sbin/second"
+    end
   end
 end
