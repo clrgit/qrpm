@@ -54,6 +54,8 @@ module Qrpm
         builtin_array = FIELDS[key]&.include?(ArrayNode) || false
         case [key.to_s, value, builtin_array]
           in [/[\/\$]/, _, _]; parse_directory_node(@ast, key, value)
+          in [String => k, String, _] if ROUTINES.include?(k)
+            ValueNode.new(@ast, k, Fragment::RoutineFragment.new(value))
           in [/^#{PATH_RE}$/, String, true]; parse_node(@ast, key, [value])
           in [/^#{PATH_RE}$/, Array, false]; parse_directory_node(@ast, key, value)
           in [/^#{PATH_RE}$/, _, _]; parse_node(@ast, key, value)
@@ -66,10 +68,18 @@ module Qrpm
       # assignments to override spec file values
       dict.each { |k,v| ValueNode.new(ast, k.to_s, Fragment::Fragment.parse(v)) }
 
-      # Add defaults
+      # Add defaults. A key with a null value (as in the generated template)
+      # gets its default too
+      !has_value?("version") || !has_value?("version_file") or
+          error "Can't use both 'version' and 'version_file'"
       DEFAULTS.each { |k,v|
         next if k == "srcdir" # Special handling of $srcdir below
-        parse_node(@ast, k, v) if !@ast.key?(k)
+        next if has_value?(k)
+        if k == "version" # Special handling, see Fragment::VersionFragment
+          ValueNode.new(@ast, k, Fragment::VersionFragment.new(file: has_value?("version_file")))
+        else
+          parse_node(@ast, k, v)
+        end
       } if @use_defaults
 
       # Only add a default $srcdir node when :srcdir is true
@@ -104,6 +114,15 @@ module Qrpm
 
       # Collect definitions and dependencies
       ast.values.each { |node| collect_variables(node) }
+
+      # Narrow the dependencies of routines to the qrpm variables they refer
+      # to. Other names are left to the shell
+      names = defs.select { |_, node| node.is_a?(ValueNode) }.keys
+      ast.values.each { |node|
+        next if !node.is_a?(ValueNode) || !node.expr.is_a?(Fragment::RoutineFragment)
+        node.expr.resolve(names)
+        @deps[node.path] = node.variables
+      }
 
       # Detect undefined variables and references to hashes or arrays
       if check_undefined
@@ -154,6 +173,12 @@ module Qrpm
     def error(msg) 
       raise CompileError, msg, caller
     end
+
+    # True if +key+ is defined in the AST with a non-null value
+    def has_value?(key)
+      node = @ast[key]
+      !node.nil? && !(node.is_a?(ValueNode) && node.expr.is_nil?)
+    end
     
     def parse_file_node(parent, hash)
       hash = { "file" => hash } if hash.is_a?(String)
@@ -163,16 +188,57 @@ module Qrpm
       unknown_keys.empty? or 
           error "Illegal file attribute(s): #{unknown_keys.join(", ")}"
 
-      # Check that exactly one of "file", "symlink", or "reflink" is defined
-      (hash.keys & %w(file symlink reflink)).size == 1 or 
-          error "Exactly one of 'file', 'symlink', or 'reflink' should be defined"
+      # Check that exactly one of "file", "symlink", "reflink", or "dir" is defined
+      (hash.keys & %w(file symlink reflink dir)).size == 1 or 
+          error "Exactly one of 'file', 'symlink', 'reflink', or 'dir' should be defined"
 
-      # Check that perm is not used together with symlink or reflink
-      (hash.keys & %w(symlink reflink)).empty? || !hash.key?("perm") or
-          error "Can't use 'perm' together with 'symlink' or 'reflink'"
+      # Check that perm, owner, and config are not used together with links
+      illegal = hash.keys & %w(perm owner config)
+      (hash.keys & %w(symlink reflink)).empty? || illegal.empty? or
+          error "Can't use '#{illegal.first}' together with 'symlink' or 'reflink'"
+
+      # Check that name and config are not used together with dir
+      if hash.key?("dir")
+        illegal = hash.keys & %w(name config)
+        illegal.empty? or error "Can't use '#{illegal.first}' together with 'dir'"
+      end
+
+      # Normalize config (YAML parses true/false as booleans)
+      case hash["config"]
+        when nil; # ok
+        when true, "true"; hash["config"] = "true"
+        when false, "false"; hash["config"] = "false"
+        when "noreplace"; # ok
+      else
+        error "Illegal config value '#{hash["config"]}', use true, false, or noreplace"
+      end
+
+      # Check owner. Variables are left as they are
+      if hash.key?("owner") && hash["owner"].to_s !~ /\$/
+        begin
+          ::Qrpm.parse_owner(hash["owner"])
+        rescue ArgumentError => ex
+          error ex.message
+        end
+      end
 
       # Normalize perm (YAML parses a literal 0644 as the integer 420!)
       hash["perm"] = sprintf "%04o", hash["perm"] if hash["perm"].is_a?(Integer)
+
+      # Translate symbolic chmod(1) modes to octal because %attr in the spec
+      # file only accepts octal modes. Variables are left as they are
+      case hash["perm"]
+        when nil, /\A[0-7]{3,4}\z/, /\$/
+          # ok
+        when /\A[ugoa+=,rwxst-]+\z/
+          begin
+            hash["perm"] = ::Qrpm.chmod_to_octal(hash["perm"])
+          rescue ArgumentError => ex
+            error "Illegal permissions '#{hash["perm"]}': #{ex.message}"
+          end
+      else
+        error "Illegal permissions '#{hash["perm"]}'"
+      end
 
       # Update file with srcdir
       hash["file"] &&= "$srcdir/#{hash["file"]}" if @use_srcdir

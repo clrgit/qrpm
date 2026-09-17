@@ -1,6 +1,8 @@
 
 # TODO: Create (and use) a Fragment.parse method
 
+require 'shellwords'
+
 module Qrpm
   module Fragment
     # A part of a key or value in the QRPM configuration file
@@ -51,7 +53,8 @@ module Qrpm
     private
       # Parse string and return an array of Fragment sources. The string is
       # scanned for $NAME, ${NAME}, $(COMMAND), and ${{NAME}} inside $(COMMAND)
-      # interpolations
+      # interpolations. Multi-line strings are parsed line by line so that
+      # a $(COMMAND) never extends beyond the end of the line
       #
       # The string is parsed into Fragments to be able to interpolate it
       # without re-parsing
@@ -61,6 +64,19 @@ module Qrpm
       # variables without quotes. Eg '/home/$pck.home/dir' will be parsed as
       # '/home/${pck.home}/dir'
       def Fragment.parse_string(string)
+        res = []
+        string.split(/(?<=\n)/).each { |line|
+          res.concat parse_line(line.chomp)
+          if line.end_with?("\n")
+            text = res.last.is_a?(TextFragment) ? res.pop.source : ""
+            res << TextFragment.new(text + "\n")
+          end
+        }
+        res
+      end
+
+      # Parse a single line. Used by #parse_string
+      def Fragment.parse_line(string)
         res = []
         string.scan(/(.*?)(\\*)(\$#{PATH_RE}|\$\{#{PATH_RE}\}|\$\(.+\)|$)/)[0..-2].each { 
             |prefix, backslashes, expr|
@@ -155,6 +171,59 @@ module Qrpm
         stdout, stderr, status = Open3.capture3(cmd)
         status == 0 or raise Error.new "Failed expanding '$(#{cmd})'\n#{stderr}"
         stdout.chomp
+      end
+    end
+
+    # A routine is a shell script that is run on the build host (make) or on
+    # the installation host (pre, post, ...). The script is not interpolated.
+    # Instead, the qrpm variables it refers to as $name or ${name} are
+    # defined as shell variables at the top of the script. Shell variables
+    # like $HOME, positional parameters like $1, and $(...) constructs are
+    # left to the shell
+    #
+    # #variables is initially the list of all names referenced in the script.
+    # Compiler#analyze narrows it to the names that are qrpm variables using
+    # #resolve
+    class RoutineFragment < Fragment
+      attr_reader :variables
+
+      def initialize(source)
+        super(source)
+        @variables = source.scan(/\$\{?(#{IDENT_RE})/).flatten.uniq
+      end
+
+      # Narrow #variables to the names in +names+
+      def resolve(names) @variables &= names end
+
+      # Return the script with the referenced qrpm variables defined at the
+      # top
+      def interpolate(dict)
+        defs = variables.map { |v| "#{v}=#{Shellwords.escape(dict[v].to_s)}" }
+        (defs + [source]).join("\n")
+      end
+    end
+
+    # The default value of the 'version' field. If +file+ is true the version
+    # is read from the file named by the 'version_file' variable, relative to
+    # the source directory. Otherwise it is searched for in the git history of
+    # the source directory
+    class VersionFragment < Fragment
+      def initialize(file: false)
+        super(file ? "$(version file)" : "$(git version)")
+        @file = file
+      end
+
+      def variables() @file ? ["srcdir", "version_file"] : ["srcdir"] end
+
+      def interpolate(dict)
+        if @file
+          name = dict["version_file"]
+          path = File.expand_path(name.to_s, dict["srcdir"])
+          File.file?(path) or raise ::Qrpm::Error, "Can't find version file '#{name}'"
+          ::Qrpm.file_version(path) or raise ::Qrpm::Error, "Can't find a version in '#{name}'"
+        else
+          ::Qrpm.git_version(dict["srcdir"])
+        end
       end
     end
 

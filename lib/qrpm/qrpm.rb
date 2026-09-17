@@ -45,8 +45,10 @@ module Qrpm
       @evaluated ||= begin
         unresolved = @defs.dup # Queue of unresolved definitions
 
-        # Find objects. Built-in RPM fields and directories are evaluated recursively
-        paths = FIELDS.keys.select { |k| @defs.key? k } + dirs.keys #+ DEFAULTS.keys
+        # Find objects. Built-in RPM fields and directories are evaluated
+        # recursively. $srcdir is always evaluated because Rpm needs it even
+        # when there are no directories that depend on it
+        paths = (FIELDS.keys + ["srcdir"]).select { |k| @defs.key? k } + dirs.keys #+ DEFAULTS.keys
 
         # Find dependency order of objects
         ordered_deps = find_evaluation_order(paths)
@@ -57,6 +59,16 @@ module Qrpm
           node.interpolate(dict) if !node.interpolated? && !dict.key?(path)
           unresolved.delete(path)
           @dict[path] = node.value if !node.is_a?(DirectoryNode) && !node.is_a?(FileNode)
+        }
+
+        # Check that mandatory fields are non-empty after evaluation
+        MANDATORY_FIELDS.each { |field|
+          next if !@dict[field].to_s.empty?
+          if field == "version"
+            raise Error, "Can't find a version in the git history. Add a 'version' field to the qrpm file"
+          else
+            raise Error, "Empty mandatory field '#{field}'"
+          end
         }
         self
       end
@@ -94,13 +106,17 @@ module Qrpm
           puts d.key
           indent {
             d.values.each { |f|
-              if f.file? && File.basename(f.src) == f.dst
+              if f.dir?
+                print "#{f.dst}/"
+              elsif f.file? && File.basename(f.src) == f.dst
                 print f.src
               else
                 joiner = f.file? ? "->" : (f.reflink? ? "~>" : "~~>")
                 print "#{f.src} #{joiner} #{f.dst}"
               end
               print ", perm: #{f.perm}" if f.perm
+              print ", owner: #{[f.owner, f.group].compact.join(".")}" if f.owner || f.group
+              print ", config: #{f.config}" if f.config
               puts
             }
           }

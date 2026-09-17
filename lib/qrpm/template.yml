@@ -5,16 +5,23 @@
 name:           # Name of package. It is used in the package name
 summary:        # Short summary of package
 description:    # Optional longer description
-version:        # Version
+version:        # Version. Default is extracted from git, see 'qrpm --help'
+version_file:   # File to scan for the version. Alternative to version
 release:        # Release. Optional
 packager:       # Packager, default $USER
-requires:       # List of required packages
+require:        # List of required packages
 
 # Build information
 #
-make: null      # make can be undefined or null (use make if present), false
-                # (don't use make), true (use make), or a list of shell
-                # commands to build the project
+make:           # Shell script that builds the project on the build host.
+                # Nothing is built if it is left out
+pre:            # Shell script run on the installation host before install
+post:           # Shell script run on the installation host after install
+pre_uninstall:  # Shell script run on the installation host before uninstall
+post_uninstall: # Shell script run on the installation host after uninstall
+#
+# Routines are not interpolated. The qrpm variables they refer to as $name are
+# defined as shell variables at the top of the script instead
 
 # Directories, files, and links
 #
@@ -39,9 +46,34 @@ make: null      # make can be undefined or null (use make if present), false
 #
 # Files can also be specified using the following attributes
 #
-#   name: Destination file name. Default is the last path component in :file
+#   name: Destination file name. Default is the last path component in
+#         :file, :symlink, or :reflink
 #   file: Path to source file
-#   perm: Octal permissions. Defaults are the source file's permissions
+#   symlink: Path on the target system to the source of a symbolic link
+#   reflink: Path on the target system to the source of a hard link
+#   perm: Permissions in octal or symbolic chmod(1) notation, eg. 0640 or
+#         u=rw,g=r,o=. Defaults are the source file's permissions. Can't be
+#         used together with :symlink or :reflink
+#   owner: Owner in user.group notation. Either part can be left out, eg.
+#         'apache.apache', 'apache', or '.apache'. Can't be used together
+#         with :symlink or :reflink
+#   config: Configuration file: true, false, or noreplace. A configuration
+#         file is saved on upgrade (true) or kept with the new file saved next
+#         to it (noreplace). Files in /etc default to noreplace
+#   dir:  Name of a directory that is created on the target system. It is
+#         initially empty but other entries can add files to it. This makes
+#         it possible to set the permissions and owner of a directory. Can't
+#         be used together with :name, :file, :symlink, :reflink, or :config
+#
+# A directory with permissions and files in it is specified like this
+#
+#   /var/lib/my_package:
+#     - dir: store
+#       owner: apache.apache
+#       perm: 0750
+#
+#   /var/lib/my_package/store:
+#     - src/initial_data
 #
 # It is used like this
 #   
@@ -53,40 +85,41 @@ make: null      # make can be undefined or null (use make if present), false
 # This will copy src/my_data to a 'data' file in the /opt/my_files directory
 # with permissions 0600
 #
-# Link files are specified using the :link attribute that is a path on the
-# target system:
+# Exactly one of :file, :symlink, and :reflink must be defined. Links are
+# specified like this:
 #
 #   /opt/my_files:
 #     - name: linked_data
-#       link: /opt/my_files/data
+#       symlink: /opt/my_files/data
 #
-# Default name for link files is the basename of of :link
+# Default name for link files is the basename of :symlink or :reflink
 #
 #
-# The following standard directories are defined: FIXME Outdated
+# The following standard directories are defined:
 #
 #   etcdir            /etc            Configuration files
 #   bindir            /usr/bin        Executables
 #   sbindir           /usr/sbin       System executables
-#   libdir            /usr/lib        Libraries (both binary and clear text)
-#   libexecdir        /usr/libexec    Executable subprograms (not meant to be 
+#   libdir            /usr/lib64      Libraries (both binary and clear text)
+#   libexecdir        /usr/libexec    Executable subprograms (not meant to be
 #                                     called indepentently)
 #   sharedir          /usr/share      Constant data files
+#   docdir            /usr/share/doc  Documentation
 #   vardir            /var/lib        Variable data files
 #   spooldir          /var/spool      Spool files
 #   rundir            /var/run        Run files
 #   lockdir           /var/lock       Lock files
 #   cachedir          /var/cache      Cache directory
-#   tmpdir            /tmp            Temporary directory (deleted between restarts)
-#   vartmpdir         /var/tmp        TODO
 #   logdir            /var/log        Log directory
+#   tmpdir            /tmp            Temporary directory (deleted between restarts)
 #
-#   pckdir            <package-name>  Name of package directory. It is always the
-#                                     name of the directory in /usr/share
+#   pckdir            <package-name>  Name of the package subdirectory
 #
-#
-# Each standard directory can also be prefixed a 'pck'. That will create a
-# subdirectory with the package's name in the base standard directory. Eg.
-# 'pcketcdir' will create the directory '/etc/<name>'
+# A standard directory resolves to the system directory listed above if it is
+# the only directory in the package and otherwise to a package subdirectory
+# named after the package (eg. /etc/<name>). Use the 'sys' or 'pck' prefixed
+# variants to choose explicitly: 'sysetcdir' is always /etc and 'pcketcdir' is
+# always /etc/<name>. There is no package specific directory for bindir and
+# sbindir. See 'qrpm --help' for the full list of built-in variables
 #
 

@@ -52,10 +52,21 @@ module Qrpm
     rundir lockdir cachedir logdir tmpdir
   )
 
+  # The root directories are the prefixes that the system directories are
+  # derived from, like the prefix variables of autoconf: rootconfdir is
+  # sysconfdir, rootexecdir is exec_prefix, rootconstdir is datarootdir, and
+  # rootdatadir is localstatedir. $rootdir is a prefix of all of them. It is
+  # empty by default so that "$rootdir/etc" becomes "/etc" and not "//etc"
+  #
+  # rootbindir and rootsbindir are /bin and /sbin, but on systems where those
+  # are symbolic links (merged /usr) they are the directories the links point
+  # to, typically /usr/bin and /usr/sbin
   ROOT_DIRS = {
-    rootdir: "/",
+    rootdir: "",
     rootconfdir: "$rootdir/etc",
     rootexecdir: "$rootdir/usr",
+    rootbindir: "$rootdir#{resolve_dir("/bin")}",
+    rootsbindir: "$rootdir#{resolve_dir("/sbin")}",
     rootlibdir: "$rootdir/usr",
     rootconstdir: "$rootdir/usr/share",
     rootdocdir: "$rootconstdir",
@@ -64,8 +75,8 @@ module Qrpm
 
   SYSTEM_DIRS = {
     sysetcdir: "$rootconfdir",
-    sysbindir: "$rootexecdir/bin",
-    syssbindir: "$rootexecdir/sbin",
+    sysbindir: "$rootbindir",
+    syssbindir: "$rootsbindir",
     syslibdir: "$rootlibdir/lib64",
     syslibexecdir: "$rootexecdir/libexec",
     syssharedir: "$rootconstdir",
@@ -101,7 +112,10 @@ module Qrpm
   DEFAULTS = {
     "name" => "$(basename $PWD)",
     "summary" => "The $name RPM package",
-    "version" => "$(cd ${{srcdir}} >/dev/null && git tag -l 2>/dev/null | sort -V | tail -1 | tr -dc '.0-9' || echo 0.0.0)",
+    # Searched for in the git history of the source directory or read from
+    # $version_file, see Fragment::VersionFragment and Compiler#parse.
+    # Qrpm#evaluate reports an error if no version is found
+    "version" => nil,
     "description" => "$summary",
     "release" => "1",
     "license" => "GPL",
@@ -113,9 +127,14 @@ module Qrpm
     "make" => nil
   }
 
-  IDENT_RE = /(?:[\w_][\w\d_]*)/
-  PATH_RE = /(?:[\w_][\w\d_.]*)/
+  # Variable names can't start with a digit so that positional parameters
+  # like $1 in routines are left to the shell
+  IDENT_RE = /(?:[a-zA-Z_]\w*)/
+  PATH_RE = /(?:[a-zA-Z_][\w.]*)/
 
-  FILE_KEYS = %w(name file symlink reflink perm)
+  # Fields that are shell scripts, see Fragment::RoutineFragment
+  ROUTINES = Rpm::ROUTINES
+
+  FILE_KEYS = %w(name file symlink reflink dir perm owner config)
 end
 

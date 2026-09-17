@@ -4,11 +4,8 @@ Version: <%= version %>
 Release: <%= release %>
 License: <%= license %>
 Packager: <%= packager %>
-<% if group -%>
-  Group: <%= group %>
-<% end -%>
 <% for pck in require || [] -%>
-  Requires: <%= pck %>
+Requires: <%= pck %>
 <% end -%>
 Source: %{name}.tar.gz
 
@@ -22,19 +19,13 @@ Source: %{name}.tar.gz
 
 %build
 cd <%= srcdir %>
-<% if make.nil? || make == false -%>
-<% elsif make == true %>
-  <% if has_configure? -%>
-    ./configure
-  <% end -%>
-  make
-<% elsif make.is_a? String -%>
-  <%= make %>
+<% if make -%>
+<%= make %>
 <% end -%>
 
 %install
 <% if !nodes.empty? -%>
-mkdir -p <%= nodes.map { |f| "%{buildroot}#{f.directory}" }.uniq.join(" ") %>
+mkdir -p <%= (nodes.map(&:directory) + dirs.map(&:dstpath)).uniq.map { |d| "%{buildroot}#{d}" }.join(" ") %>
 <% for file in files -%>
 cp <%= file.srcpath %> %{buildroot}<%= file.dstpath %>
 <% end -%>
@@ -44,8 +35,8 @@ touch %{buildroot}<%= link.dstpath %>
 <% end -%>
 
 %files
-<% for file in files -%>
-<%= file.dstpath %>
+<% for file in files + dirs -%>
+<%= (file.directives + [file.dstpath]).join(" ") %>
 <% end -%>
 <% for link in links -%>
 %ghost <%= link.dstpath %>
@@ -54,14 +45,28 @@ touch %{buildroot}<%= link.dstpath %>
 %clean
 true # no-op
 
+<% if pre -%>
+%pre
+<%= pre %>
+
+<% end -%>
 %post
-<% for file in files.select(&:perm) -%>
-chmod <%= file.perm %> <%= file.dstpath %>
+<% for link in reflinks -%>
+ln -f <%= link.reflink %> <%= link.dstpath %>
 <% end -%>
-<% for file in reflinks -%>
-ln -sf <%= link.reflink %> <%= link.dstpath %>
-<% end -%>
-<% for file in symlinks -%>
+<% for link in symlinks -%>
 ln -sf <%= link.symlink %> <%= link.dstpath %>
 <% end -%>
+<% if post -%>
+<%= post %>
+<% end -%>
+<% if pre_uninstall -%>
 
+%preun
+<%= pre_uninstall %>
+<% end -%>
+<% if post_uninstall -%>
+
+%postun
+<%= post_uninstall %>
+<% end -%>

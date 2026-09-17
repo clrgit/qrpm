@@ -1,84 +1,180 @@
-# QRPM configuration file. See https://github.com/clrgit/qrpm
-
-# program ::= directory...
-# directory ::= field... directory...
-# field ::= key '*' value
-# directory ::= array(string)
+# Example QRPM configuration file that shows all possibilities. See
+# 'qrpm --help' for the full documentation
 #
-# TODO
-#   o Use '@' instead of '$'. Yields @name and @{name} that doesn't interfere
-#     with bash expansion
-#   
+# A qrpm file is a YAML file with three kinds of top-level entries: RPM
+# fields, variables, and directories. A line with '__END__' terminates the
+# file, everything after it is ignored
+
+# RPM FIELDS
 #
-# ${{name}} in $(...)
-#   QRPM dependency check variable definitions and needs to be able to detect
-#   variable usages in $(...) constructs
+# All fields have defaults so the shortest possible qrpm file is a single
+# directory entry
 
-# @include git-project
-#   -> version: $(cd ${{srcdir}}; git tag | tail -1 | sed 's/^v//')
-#      
-# @include postgres-project prefix: pg_
-#   -> pg_name
-#      pg_version
-#      pg_libdir
-#      pg_sharedir
+name: example                   # Default is the name of the current directory
+summary: An example package     # Default 'The $name RPM package'
+description: |                  # Default is the summary
+  A longer description of the package. It can span
+  several lines
+# version: 1.2.3                # Default is extracted from the newest
+                                # tag/branch in the git history, see
+                                # 'qrpm --help' for the details
+# version_file: lib/version.rb  # Scan a file for the version instead. Can't
+                                # be used together with version
+release: 1                      # Default 1
+packager: Some Body <somebody@example.com>  # Default is the name of the current user
+license: MIT                    # Default GPL
+require:                        # Required packages. A single name or a list
+  - bash
+  - ruby >= 3.0
+
+# INCLUDE FILES
 #
-# @include postgres-project git@github.com:... commit-id
+# Other qrpm files can be included. Their entries are merged into this file
+# and later definitions win. './file' is relative to the directory of the
+# qrpm file and '../file' to its parent, '/file' is an absolute path, and a
+# bare name is searched for in the directories given with the -I option
 #
-# @include redhat/httpd
-# @include redhat/pg
-# @include pgdg
+# include: ./common.yml
+# include:
+#   - ./common.yml
+#   - site-defaults.yml
+
+# VARIABLES
 #
-# pg.version: 14
-# pg: pgdg[14]
+# Any other key is a variable. Values can refer to other variables with $name
+# or ${name}, and to members of nested variables with $pg.version. Use ${name}
+# when the variable is followed by a letter, a digit, or a dot as in
+# ${name}.conf. Variables can be overridden on the command line:
+#
+#   qrpm prefix=/opt/other example.yml
 
-name: $pg_name-url_encode
-summary: Adds the 'url_encode' extension to postgres ${pg.version}
-description: RPM wrapper for the postgres url_encode extension (https://github.com/okbob/url_encode)
-version: $(cd ${{srcdir}}; git tag | tail -1 | sed 's/^v//')
-            # ^Oops, hardcoded FIXME: Have a dependency graph and use some standard algorithm
-
-include:
-  - ./qrpm.includes
-
-requires:
-  - $pg_name-server
-  - $pg_name-libs
-
-a: $b
-b: $c
-c: $a
-# Idea
-#submod: url_encode
-#subdir: url_encode
-#patches:
-# - patch/patch1.patch
-srcdir: url_encode
-
-root: ""
-
+prefix: /opt/$name
 pg:
-  name: $(rpm -q --qf '%{NAME}\n' -f $(readlink -f $(which pg_config)))
-  version: $(pg_config --version | sed 's/^[^0-9]* \([0-9]\+\).*$/\1/')
-  major: $version
-  libdir: $(pg_config --libdir)
-  sharedir: $(pg_config --sharedir)
+  version: 15
+  libdir: /usr/pgsql-$pg.version/lib
 
-#init: # FIXME Doesn't work atm
-# - git submodule init
-# - git submodule update
+# $(command) runs the command with bash when the qrpm file is compiled and
+# uses its output as the value. Variables inside the command are written
+# ${{name}}. Everything from '$(' to the last ')' on the line is the command
+year: $(date +%Y)
+tarname: $(basename ${{prefix}})
 
+# A backslash escapes '$'
+price: \$5
+
+# The source directory. File paths in the directory entries below are
+# relative to it and the build routine runs in it. Default '.'
+srcdir: example
+
+# ROUTINES
+#
+# Routines are shell scripts. They are not interpolated, instead the qrpm
+# variables they refer to are defined as shell variables at the top of the
+# script. Shell variables, positional parameters, and $(...) work as usual.
+# 'make' runs in the source directory on the build host when the package is
+# built. Nothing is built if it is left out
 make: |
-  cd $srcdir; make
+  echo "Built in $year on $(hostname)" > bin/another_file
 
-${pg.sharedir}/extension:
-  - $srcdir/url_encode.control
-  - $srcdir/sql/url_encode--1.2.sql
+# 'pre' and 'post' run on the installation host before and after the package
+# is installed, 'pre_uninstall' and 'post_uninstall' before and after it is
+# uninstalled. $1 is 1 on install and 2 on upgrade
+post: |
+  if [ $1 -eq 1 ]; then
+    echo "$name $version installed in $prefix"
+  fi
 
-${pg.libdir}:
-  - $srcdir/src/url_encode.so
-  - $srcdir/postgresql$version
+post_uninstall: |
+  echo "$name uninstalled"
 
-$root/somedir:
-  - $srcdir/somefile
+# DIRECTORIES
+#
+# A directory entry is a key that is a path or starts with a variable, with a
+# list of files as value. The standard directories are
+#
+#   $etcdir $bindir $sbindir $libdir $libexecdir $sharedir $docdir $vardir
+#   $spooldir $rundir $lockdir $cachedir $logdir $tmpdir
+#
+# A standard directory resolves to the system directory (eg. /etc) when it is
+# the only directory in the package and otherwise to a package subdirectory
+# (eg. /etc/$name). Use the explicit variants when it matters: $sysetcdir is
+# always /etc and $pcketcdir is always /etc/$name. There is no package
+# subdirectory for bin and sbin. See 'qrpm --help' for the full list
 
+# A plain list of files. The destination name is the basename of the source
+$bindir:
+  - bin/a_file
+  - bin/another_file
+
+# A file can also be a hash with the following keys
+#
+#   file      Path to the source file, relative to $srcdir
+#   name      Destination file name. Default is the basename of the source
+#   perm      Permissions in octal (0640) or symbolic chmod(1) notation
+#             (u=rw,g=r,o=). Default is the permissions of the source
+#   symlink   Path on the target system that the destination links to
+#   reflink   Path on the target system that the destination hard links to
+#   owner     Owner in user.group notation, eg. apache.apache, apache, or
+#             .apache
+#   config    Configuration file: true, false, or noreplace. Files in /etc
+#             default to noreplace, so they are kept on upgrade and the new
+#             file is saved next to them
+#   dir       Name of a directory that is created on the target system. It
+#             is initially empty but other entries can add files to it, which
+#             makes it possible to set the permissions and owner of a
+#             directory
+#
+# Exactly one of file, symlink, reflink, and dir must be given. perm, owner,
+# and config can't be used with links, and name and config can't be used
+# with dir
+$sbindir:
+  - name: example-admin
+    file: bin/a_file
+    perm: u=rwx,g=rx,o=
+  - symlink: /usr/bin/a_file    # Creates /usr/sbin/a_file -> /usr/bin/a_file
+  - name: a_link
+    reflink: /usr/bin/another_file
+
+# The package subdirectory /usr/share/example
+$pcksharedir:
+  - share/some_data
+
+# Paths can be extended and can contain variables
+$pcksharedir/data:
+  - share/some_other_data
+
+# A directory can also be a variable. $pg.libdir is the libdir member of the
+# pg variable defined above, so this is /usr/pgsql-15/lib
+$pg.libdir:
+  - share/some_data
+
+$prefix/etc:
+  - name: ${name}.conf
+    file: share/some_data
+    perm: 0640
+    config: noreplace           # Not under /etc, so it must be given
+
+# Files in /etc are configuration files by default
+$pcketcdir:
+  - name: settings
+    file: share/some_data
+  - name: generated             # Overwritten on upgrade, old file saved as .rpmsave
+    file: share/some_other_data
+    config: true
+
+# A directory entry creates a directory with the given owner and permissions.
+# It is initially empty, but other entries can add files to it. Here the
+# store directory belongs to nobody and holds a file owned by the nobody group
+$pckvardir:
+  - dir: store
+    owner: nobody.nobody
+    perm: 0750
+  - dir: cache                  # An empty directory with default owner and permissions
+
+$pckvardir/store:
+  - name: data
+    file: share/some_data
+    owner: .nobody
+
+__END__
+Everything after __END__ is ignored

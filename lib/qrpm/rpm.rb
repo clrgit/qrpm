@@ -6,6 +6,9 @@ module Qrpm
   #
   #   name        Package name (mandatory)
   #   version     Version (mandatory)
+  #   version_file
+  #               File that is scanned for the version. Alternative to
+  #               'version'
   #   release     Release
   #   summary     Short one-line description of package (mandatory)
   #   description Description
@@ -13,28 +16,36 @@ module Qrpm
   #               $USER@$HOSTNAME if not found)
   #   license     License (defaults to GPL)
   #   require     Array of required packages
-  #   make        Controls the build process:
-  #                 true    Expect the top-level directory to contain
-  #                         configure or make files and runs them. It is an
-  #                         error if the Makefile is missing
-  #                 (possibly multiline command)
-  #                         Runs the command to build the project
+  #   make        Shell script that builds the project on the build host
+  #   pre         Shell script run on the installation host before install
+  #   post        Shell script run on the installation host after install
+  #   pre_uninstall
+  #               Shell script run on the installation host before uninstall
+  #   post_uninstall
+  #               Shell script run on the installation host after uninstall
+  #
+  # The shell scripts are routines, see Fragment::RoutineFragment
   #
   # Each field has a dynamically generated accessor method that can be
   # referenced in the template file
   class Rpm
     MANDATORY_FIELDS = %w(name version summary)
+    ROUTINES = %w(make pre post pre_uninstall post_uninstall)
 
     # Maps from field name to array of allowed types for that field
     FIELDS = MANDATORY_FIELDS.map { |f| [f, [String]] }.to_h.merge({
+      "version_file" => [String],
       "release" => [String],
       "description" => [String],
       "packager" => [String],
       "license" => [String],
-      "group" => [String],
       "include" => [Array, String],
       "require" => [Array, String],
-      "make" => [String]
+      "make" => [String],
+      "pre" => [String],
+      "post" => [String],
+      "pre_uninstall" => [String],
+      "post_uninstall" => [String]
     })
 
     RPM_DIRS = %w(SOURCES BUILD RPMS SPECS SRPMS tmp)
@@ -71,6 +82,7 @@ module Qrpm
     attr_reader :spec
 
     def files() @files ||= nodes.select(&:file?) end
+    def dirs() @dirs ||= nodes.select(&:dir?) end
     def links() @links ||= nodes.select(&:link?) end
     def reflinks() @reflinks ||= nodes.select(&:reflink?) end
     def symlinks() @symlinks ||= nodes.select(&:symlink?) end
@@ -86,6 +98,13 @@ module Qrpm
 
     def has_configure?() ::File.exist? "#{srcdir}/configure" end
     def has_make?() ::File.exist? "#{srcdir}/Makefile" end
+
+    # Render the SPEC file from the template and return it as a String. The
+    # result is also assigned to #spec
+    def render
+      renderer = ERB.new(IO.read(@template).sub(/^__END__\n.*/m, ""), trim_mode: "-")
+      @spec = renderer.result(binding)
+    end
 
     def build(target: :rpm, file: nil, verbose: false, destdir: ".", builddir: nil)
       verb = verbose ? "" : "&>/dev/null"
@@ -117,9 +136,8 @@ module Qrpm
         # files are in the git repo or not
         system "tar zcf #{tar_path} --transform=s%^\./%#{name}/% ." # FIXME FIXME
 
-        # Create spec file. Initial blanks are removed from each line in the file
-        renderer = ERB.new(IO.read(@template).sub(/^__END__\n.*/m, ""), trim_mode: "-")
-        @spec = renderer.result(binding).gsub(/^[[:blank:]]*/, "")
+        # Create spec file
+        render
 
         # Emit spec or build RPM
         if target == :spec
