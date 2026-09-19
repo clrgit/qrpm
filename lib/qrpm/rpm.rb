@@ -50,6 +50,15 @@ module Qrpm
 
     RPM_DIRS = %w(SOURCES BUILD RPMS SPECS SRPMS tmp)
 
+    # Build targets. Maps from target name to the rpm macros that make the
+    # package installable on that system. The target is also appended to the
+    # release so that the package file shows what it was built for
+    TARGETS = {
+      # rpm 4.11 on el7 can't read the zstd payload that newer rpmbuild
+      # versions emit by default
+      "el7" => { "_binary_payload" => "w9.gzdio" }
+    }
+
     # Field accessor methods. FIXME Value should have been resolved
     FIELDS.each { |f,ts|
       if ts.include? Array
@@ -81,19 +90,28 @@ module Qrpm
     # The content of the SPEC file
     attr_reader :spec
 
+    # Build target, a key of TARGETS, or nil
+    attr_reader :target
+
+    # The rpm macros of the target as a hash. Empty if there is no target
+    def globals() target ? TARGETS[target] : {} end
+
     def files() @files ||= nodes.select(&:file?) end
     def dirs() @dirs ||= nodes.select(&:dir?) end
     def links() @links ||= nodes.select(&:link?) end
     def reflinks() @reflinks ||= nodes.select(&:reflink?) end
     def symlinks() @symlinks ||= nodes.select(&:symlink?) end
 
-    def initialize(srcdir, fields, nodes, template: QRPM_ERB_FILE)
+    def initialize(srcdir, fields, nodes, template: QRPM_ERB_FILE, target: nil)
       constrain srcdir, String
       constrain fields, { String => Node }
       constrain nodes, [FileNode]
+      constrain target, String, nil
+      target.nil? || TARGETS.key?(target) or raise ArgumentError, "Unknown target '#{target}'"
       @fields, @nodes = fields, nodes
       @srcdir = srcdir
       @template = template
+      @target = target
     end
 
     def has_configure?() ::File.exist? "#{srcdir}/configure" end
@@ -172,6 +190,7 @@ module Qrpm
     def dump
       puts self.class
       indent {
+        puts "target: #{target}" if target
         puts "fields"
         indent { fields.sort_by(&:first).each { |k,v| puts "#{k}: #{v.value}" } }
         puts "nodes"

@@ -57,6 +57,28 @@ describe "qrpm executable" do
     end
   end
 
+  describe "--target" do
+    def write_qrpm_file
+      File.write "#{dir}/qrpm.yml", { "name" => "pck", "version" => "1.0.0", "summary" => "s" }.to_yaml
+    end
+
+    it "builds a spec for the target" do
+      write_qrpm_file
+      _stdout, stderr, status = qrpm("--target=el7", "-s", chdir: dir)
+      expect(status).to be_success, stderr
+      spec = File.read("#{dir}/pck.spec")
+      expect(spec).to start_with "%global _binary_payload w9.gzdio\n"
+      expect(spec).to include "Release: 1.el7\n"
+    end
+
+    it "rejects unknown targets" do
+      write_qrpm_file
+      _stdout, stderr, status = qrpm("--target=el5", "-s", chdir: dir)
+      expect(status).not_to be_success
+      expect(stderr).to include "Unknown target 'el5'"
+    end
+  end
+
   describe "show" do
     it "outputs directory variables without double slashes" do
       # Only variables used by a directory are evaluated and can be shown

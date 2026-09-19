@@ -236,6 +236,13 @@ begin
       -B,force-builddir=PATH?
         Like --builddir but overwrites the directory if it exists beforehand
 
+      --target=TARGET
+        Build the package for another system. The target selects rpm macros
+        that make the package installable there and is appended to the
+        release, eg. 1.el7, so that the package file shows what it was built
+        for. The only target is 'el7' (CentOS/RHEL 7), which makes rpmbuild use
+        a gzip payload because rpm 4.11 can't read the default zstd payload
+
       -d,dump
         Dump internal data and exit. For debug
 
@@ -314,7 +321,11 @@ begin
   # relative to the source directory
   compiler = Qrpm::Compiler.new(overrides)
   qrpm = compiler.compile(conf)
-  rpm = qrpm.rpm
+  # Check target
+  opts.target.nil? || Qrpm::Rpm::TARGETS.key?(opts.target) or
+      ShellOpts.error "Unknown target '#{opts.target}', use one of #{Qrpm::Rpm::TARGETS.keys.join(", ")}"
+
+  rpm = qrpm.rpm(target: opts.target)
 
   if opts.subcommand == :show!
     for variable in show

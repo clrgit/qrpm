@@ -2,9 +2,11 @@ require 'open3'
 
 describe "Qrpm::Rpm" do
   # Compile a qrpm.yml hash and render the SPEC file
-  def render(yaml, dict = {})
+  # +dict+ is the compiler dictionary (command line overrides) and +target+
+  # the build target
+  def render(yaml, dict = {}, target = nil)
     yaml = { "name" => "pck", "version" => "1.0.0", "summary" => "summary" }.merge(yaml)
-    Qrpm::Compiler.new(dict).compile(yaml).rpm.render
+    Qrpm::Compiler.new(dict).compile(yaml).rpm(target: target).render
   end
 
   describe "#render" do
@@ -60,6 +62,23 @@ describe "Qrpm::Rpm" do
       spec = render("$bindir" => ["bin/file"])
       expect(spec).to match(/^\/usr\/bin\/file$/)
       expect(spec).not_to include "%attr"
+    end
+
+    describe "target" do
+      it "emits the macros of the target and tags the release" do
+        spec = render({}, {}, "el7")
+        expect(spec).to start_with "%global _binary_payload w9.gzdio\nName: pck\n"
+        expect(spec).to include "Release: 1.el7\n"
+      end
+      it "emits nothing without a target" do
+        spec = render({})
+        expect(spec).to start_with "Name: pck\n"
+        expect(spec).to include "Release: 1\n"
+        expect(spec).not_to include "%global _binary_payload"
+      end
+      it "rejects unknown targets" do
+        expect { render({}, {}, "el5") }.to raise_error(ArgumentError, /el5/)
+      end
     end
 
     describe "config" do

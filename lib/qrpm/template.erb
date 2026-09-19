@@ -1,7 +1,10 @@
+<% for macro, value in globals -%>
+%global <%= macro %> <%= value %>
+<% end -%>
 Name: <%= name %>
 Summary: <%= summary %>
 Version: <%= version %>
-Release: <%= release %>
+Release: <%= release %><%= target ? ".#{target}" : "" %>
 License: <%= license %>
 Packager: <%= packager %>
 <% for pck in require || [] -%>
