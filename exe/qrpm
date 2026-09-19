@@ -65,16 +65,16 @@ begin
         version_file
           File that is scanned for the version. An alternative to 'version'
 
+        release
+          Build number of this version of the package. It is appended to the
+          version in the package name (eg. 1.2.3-1) and is incremented when the
+          package is rebuilt without changing the version. Default 1
+
         summary
           A short one-line text. Default 'The <name> RPM package'
 
         description
           A longer multiline text. Default is the summary
-
-        release
-          Build number of this version of the package. It is appended to the
-          version in the package name (eg. 1.2.3-1) and is incremented when the
-          package is rebuilt without changing the version. Default 1
 
         packager
           Packager name. Default the current user
